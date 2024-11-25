@@ -54,6 +54,8 @@ typedef struct {
     // src and dst
     FILE *fp_input;
     FILE *fp_output;
+    FILE *fp_output_yuv;
+    FILE *fp_output_scale;
     FILE *fp_verify;
 
     /* encoder config set */
@@ -239,6 +241,21 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
         }
     }
 
+    if (cmd->file_output_yuv) {
+        p->fp_output_yuv = fopen(cmd->file_output_yuv, "w+b");
+        if (NULL == p->fp_output_yuv) {
+            mpp_err("failed to open output file %s\n", cmd->file_output_yuv);
+            ret = MPP_ERR_OPEN_FILE;
+        }
+    }
+
+    if (cmd->file_output_scale) {
+        p->fp_output_scale = fopen(cmd->file_output_scale, "w+b");
+        if (NULL == p->fp_output_scale) {
+            mpp_err("failed to open output file %s\n", cmd->file_output_scale);
+            ret = MPP_ERR_OPEN_FILE;
+        }
+    }
     if (cmd->file_slt) {
         p->fp_verify = fopen(cmd->file_slt, "wt");
         if (!p->fp_verify)
@@ -309,6 +326,14 @@ MPP_RET test_ctx_deinit(MpiEncTestData *p)
         if (p->fp_output) {
             fclose(p->fp_output);
             p->fp_output = NULL;
+        }
+        if (p->fp_output_yuv) {
+            fclose(p->fp_output_yuv);
+            p->fp_output_yuv = NULL;
+        }
+        if (p->fp_output_scale) {
+            fclose(p->fp_output_scale);
+            p->fp_output_scale = NULL;
         }
         if (p->fp_verify) {
             fclose(p->fp_verify);
@@ -700,6 +725,8 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
+
+                fwrite(camera_frame_to_start(p->cam_ctx, cam_frm_idx), 1, camera_frame_to_length(p->cam_ctx, cam_frm_idx), p->fp_output_yuv);
             }
         }
 
@@ -1150,12 +1177,23 @@ int main(int argc, char **argv)
     MpiEncTestArgs* cmd = mpi_enc_test_cmd_get();
 
     // parse the cmd option
-    ret = mpi_enc_test_cmd_update_by_args(cmd, argc, argv);
-    if (ret)
-        goto DONE;
+//    ret = mpi_enc_test_cmd_update_by_args(cmd, argc, argv);
+//    if (ret)
+//        goto DONE;
+//
+//    mpi_enc_test_cmd_show_opt(cmd);
 
-    mpi_enc_test_cmd_show_opt(cmd);
-
+    cmd->file_input = "/dev/video11";
+    cmd->file_output = "/opt/output.h264";
+    cmd->file_output_yuv = "/opt/output.yuv";
+    cmd->file_output_scale = "/opt/output_scale.yuv";
+    cmd->type = MPP_VIDEO_CodingAVC;
+    cmd->type_src = MPP_VIDEO_CodingUnused;
+    cmd->format = MPP_FMT_YUV420SP;
+    cmd->frame_num = 100;
+    cmd->nthreads = 1;
+    cmd->width = 1280;
+    cmd->height = 720;
     ret = enc_test_multi(cmd, argv[0]);
 
 DONE:

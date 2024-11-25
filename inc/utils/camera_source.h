@@ -39,6 +39,10 @@ MPP_RET camera_source_put_frame(CamSource *ctx, RK_S32 idx);
 
 MppBuffer camera_frame_to_buf(CamSource *ctx, RK_S32 idx);
 
+void* camera_frame_to_start(CamSource *ctx, RK_S32 idx);
+
+size_t camera_frame_to_length(CamSource *ctx, RK_S32 idx);
+
 #ifdef __cplusplus
 }
 #endif

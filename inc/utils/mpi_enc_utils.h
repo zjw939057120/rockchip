@@ -25,6 +25,8 @@
 typedef struct MpiEncTestArgs_t {
     char                *file_input;
     char                *file_output;
+    char                *file_output_yuv;
+    char                *file_output_scale;
     char                *file_cfg;
     dictionary          *cfg_ini;
 
