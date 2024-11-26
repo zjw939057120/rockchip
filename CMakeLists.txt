@@ -26,6 +26,7 @@ link_libraries(rockchip_mpp mpp_base pthread)
 
 # mpi encoder unit test
 add_executable(mpi_enc mpi_enc_test.c
+        fifo.c
         mpi_enc_test.c
         #utils
         mpp_enc_roi_utils.c

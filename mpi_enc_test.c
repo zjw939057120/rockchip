@@ -15,6 +15,7 @@
  */
 
 #include "mpi_enc_test.h"
+#include "fifo.h"
 
 typedef struct {
     // base flow context
@@ -36,7 +37,8 @@ typedef struct {
     FILE *fp_input;
     FILE *fp_output;
     FILE *fp_output_yuv;
-    FILE *fp_output_scale;
+    FILE *fp_fifo_input;
+    FILE *fp_fifo_output;
     FILE *fp_verify;
 
     /* encoder config set */
@@ -229,14 +231,27 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
             ret = MPP_ERR_OPEN_FILE;
         }
     }
-
-    if (cmd->file_output_scale) {
-        p->fp_output_scale = fopen(cmd->file_output_scale, "w+b");
-        if (NULL == p->fp_output_scale) {
-            mpp_err("failed to open output file %s\n", cmd->file_output_scale);
+    if (cmd->fifo_input) {
+        p->fp_fifo_input = fopen(cmd->fifo_input, "rb");
+        if (NULL == p->fp_fifo_input) {
+            mpp_err("failed to open output file %s\n", cmd->fifo_input);
             ret = MPP_ERR_OPEN_FILE;
         }
     }
+    if (cmd->fifo_output) {
+        p->fp_fifo_output = fopen(cmd->fifo_output, "w+b");
+        if (NULL == p->fp_fifo_output) {
+            mpp_err("failed to open output file %s\n", cmd->fifo_output);
+            ret = MPP_ERR_OPEN_FILE;
+        } else{
+            // 设置非阻塞模式
+/*            int fd = fileno(p->fp_fifo_output);  // 获取文件描述符
+            int flags = fcntl(fd, F_GETFL, 0);  // 获取文件状态标志
+            fcntl(fd, F_SETFL, flags | O_NONBLOCK);  // 设置为非阻塞模式
+            printf("output chn_id %d open done\n", cmd->chn_id);*/
+        }
+    }
+
     if (cmd->file_slt) {
         p->fp_verify = fopen(cmd->file_slt, "wt");
         if (!p->fp_verify)
@@ -312,9 +327,13 @@ MPP_RET test_ctx_deinit(MpiEncTestData *p)
             fclose(p->fp_output_yuv);
             p->fp_output_yuv = NULL;
         }
-        if (p->fp_output_scale) {
-            fclose(p->fp_output_scale);
-            p->fp_output_scale = NULL;
+        if (p->fp_fifo_input) {
+            fclose(p->fp_fifo_input);
+            p->fp_fifo_input = NULL;
+        }
+        if (p->fp_fifo_output) {
+            fclose(p->fp_fifo_output);
+            p->fp_fifo_output = NULL;
         }
         if (p->fp_verify) {
             fclose(p->fp_verify);
@@ -669,15 +688,14 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
         RK_U32 eoi = 1;
 
 #ifdef _RGA_RESIZE_
-        void *yuv_data;
-        RK_U32 yuv_size;
-        MppMeta meta_scale = NULL;
-        MppFrame frame_scale = NULL;
-        MppPacket packet_scale = NULL;
-        void *buf_scale = mpp_buffer_get_ptr(p->frm_buf);
-        RK_S32 cam_frm_idx_scale = -1;
-        MppBuffer cam_buf_scale = NULL;
-        RK_U32 eoi_scale = 1;
+        struct MPPResize mppResize;
+        mppResize.meta_resize = NULL;
+        mppResize.frame_resize = NULL;
+        mppResize.packet_resize = NULL;
+        mppResize.buf_resize = mpp_buffer_get_ptr(p->frm_buf);
+        mppResize.cam_frm_idx_resize = -1;
+        mppResize.cam_buf_resize = NULL;
+        mppResize.eoi_resize = 1;
 #endif
 
         if (p->fp_input) {
@@ -720,20 +738,14 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 mpp_assert(cam_buf);
 
 #ifdef _RGA_RESIZE_
-                yuv_data = mpp_buffer_get_ptr(cam_buf);  // 指向 YUV 数据的指针
-                yuv_size = mpp_buffer_get_size(cam_buf); // YUV 数据的大小
-                MPP_RET ret = mpp_buffer_get(NULL, &cam_buf_scale, yuv_size);// 申请 MppBuffer
-                if (ret) {
-                    mpp_err("failed to allocate MppBuffer\n");
-                    return ret;
+                if (p->fp_output_yuv){
+                    printf("cam_buf:%p %zu %d %d %zu\n",mpp_buffer_get_ptr(cam_buf),mpp_buffer_get_size(cam_buf),mpp_buffer_get_index(cam_buf),mpp_buffer_get_fd(cam_buf),mpp_buffer_get_offset(cam_buf));
+                    fwrite(mpp_buffer_get_ptr(cam_buf),1, mpp_buffer_get_size(cam_buf), p->fp_output_yuv);
                 }
-                void *buf_ptr = mpp_buffer_get_ptr(cam_buf_scale);// 获取 MppBuffer 的内存指针
-                memcpy(buf_ptr, yuv_data, yuv_size);// 将 YUV 数据拷贝到 MppBuffer 中
-
-                printf("cam_buf:%p %zu %d %d %zu\n",mpp_buffer_get_ptr(cam_buf),mpp_buffer_get_size(cam_buf),mpp_buffer_get_index(cam_buf),mpp_buffer_get_fd(cam_buf),mpp_buffer_get_offset(cam_buf));
-                printf("cam_buf_scale:%p %zu %d %d %zu\n",mpp_buffer_get_ptr(cam_buf_scale),mpp_buffer_get_size(cam_buf_scale),mpp_buffer_get_index(cam_buf_scale),mpp_buffer_get_fd(cam_buf_scale),mpp_buffer_get_offset(cam_buf_scale));
-                if (p->fp_output_yuv)
-                    fwrite(mpp_buffer_get_ptr(cam_buf_scale), 1, mpp_buffer_get_size(cam_buf_scale), p->fp_output_yuv);
+                if(cmd->master == true && p->fp_fifo_output){
+                    //printf("fifo_write \n");
+                    //fifo_write(camera_frame_to_start(cam_buf, cam_frm_idx), camera_frame_to_length(cam_buf, cam_frm_idx),p->fp_fifo_output);
+                }
 #endif
             }
         }
@@ -754,8 +766,8 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
         if (p->fp_input && feof(p->fp_input))
             mpp_frame_set_buffer(frame, NULL);
 #ifdef _RGA_RESIZE_
-        else if (cam_buf_scale)
-            mpp_frame_set_buffer(frame, cam_buf_scale);
+        else if (mppResize.cam_buf_resize)
+            mpp_frame_set_buffer(frame, mppResize.cam_buf_resize);
 #endif
         else if (cam_buf)
             mpp_frame_set_buffer(frame, cam_buf);
@@ -1183,30 +1195,68 @@ int enc_test_multi(MpiEncTestArgs* cmd, const char *name)
     return ret;
 }
 
+int enc_test_multi_ex(MpiEncTestArgs* cmd){
+
+    enc_test_multi(cmd,cmd->file_input);
+
+DONE:
+    mpi_enc_test_cmd_put(cmd);
+}
+
 int main(int argc, char **argv)
 {
     RK_S32 ret = MPP_NOK;
-    MpiEncTestArgs* cmd = mpi_enc_test_cmd_get();
 
-    // parse the cmd option
-//    ret = mpi_enc_test_cmd_update_by_args(cmd, argc, argv);
-//    if (ret)
-//        goto DONE;
-//
-//    mpi_enc_test_cmd_show_opt(cmd);
+    fifo_init();
 
-    cmd->file_input = "/dev/video11";
-    cmd->file_output = "/opt/output.h264";
-    cmd->file_output_yuv = "/opt/output.yuv";
-    cmd->file_output_scale = "/opt/output_scale.yuv";
-    cmd->type = MPP_VIDEO_CodingAVC;
-    cmd->type_src = MPP_VIDEO_CodingUnused;
-    cmd->format = MPP_FMT_YUV420SP;
-    cmd->frame_num = 100;
-    cmd->nthreads = 1;
-    cmd->width = 1280;
-    cmd->height = 720;
-    ret = enc_test_multi(cmd, argv[0]);
+    MpiEncTestArgs* cmd[MAX_CHANNEL];
+    uint8_t i;
+    int result;
+    i = 0;
+    cmd[i] = mpi_enc_test_cmd_get();
+    cmd[i]->chn_id = 0;
+    cmd[i]->master = true;
+    cmd[i]->file_input = "/dev/video11";
+    cmd[i]->file_output = "/opt/output_0.h264";
+    cmd[i]->file_output_yuv = "/opt/output_0.yuv";
+    cmd[i]->fifo_output = FIFO_NAME_1;
+    cmd[i]->type = MPP_VIDEO_CodingAVC;
+    cmd[i]->type_src = MPP_VIDEO_CodingUnused;
+    cmd[i]->format = MPP_FMT_YUV420SP;
+    cmd[i]->frame_num = 10;
+    cmd[i]->nthreads = 1;
+    cmd[i]->width = 1280;
+    cmd[i]->height = 720;
+    cmd[i]->bps_target = 2048 * 1024;
+    result = pthread_create(&cmd[i]->thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, cmd[i]);
+    if (result != 0) {
+        printf("Error creating thread. Error code: %d\n", result);
+    }
+
+//    i = 1;
+//    cmd[i] = mpi_enc_test_cmd_get();
+//    cmd[i]->chn_id = 1;
+//    cmd[i]->master = false;
+//    cmd[i]->file_input = "/opt/output.yuv";
+//    cmd[i]->file_output = "/opt/output_1.h264";
+//    cmd[i]->file_output_yuv = "/opt/output_1.yuv";
+//    cmd[i]->fifo_input = FIFO_NAME_1;
+//    cmd[i]->type = MPP_VIDEO_CodingAVC;
+//    cmd[i]->type_src = MPP_VIDEO_CodingUnused;
+//    cmd[i]->format = MPP_FMT_YUV420SP;
+//    cmd[i]->frame_num = 10;
+//    cmd[i]->nthreads = 1;
+//    cmd[i]->width = 1280;
+//    cmd[i]->height = 720;
+//    cmd[i]->bps_target = 2048 * 1024;
+    //result = pthread_create(&cmd[i]->thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, cmd[i]);
+    if (result != 0) {
+        printf("Error creating thread. Error code: %d\n", result);
+    }
+
+    while (1) {
+        sleep(1000);
+    }
 
 DONE:
     mpi_enc_test_cmd_put(cmd);

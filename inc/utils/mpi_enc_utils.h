@@ -18,6 +18,7 @@
 #define __MPI_ENC_UTILS_H__
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "rk_venc_cmd.h"
 #include "iniparser.h"
@@ -25,8 +26,12 @@
 typedef struct MpiEncTestArgs_t {
     char                *file_input;
     char                *file_output;
+    RK_S32              chn_id;
+    bool                master;
     char                *file_output_yuv;
-    char                *file_output_scale;
+    char                *fifo_input;
+    char                *fifo_output;
+    pthread_t           thread_id;
     char                *file_cfg;
     dictionary          *cfg_ini;
 

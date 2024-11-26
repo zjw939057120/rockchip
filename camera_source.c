@@ -440,7 +440,7 @@ MppBuffer camera_frame_to_buf(CamSource *ctx, RK_S32 idx)
     return buf;
 }
 
-MppBuffer camera_frame_to_start(CamSource *ctx, RK_S32 idx)
+void* camera_frame_to_start(CamSource *ctx, RK_S32 idx)
 {
     return ctx->fbuf[idx].start;
 }
