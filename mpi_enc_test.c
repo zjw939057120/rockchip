@@ -14,26 +14,7 @@
  * limitations under the License.
  */
 
-#if defined(_WIN32)
-#include "vld.h"
-#endif
-
-#define MODULE_TAG "mpi_enc_test"
-
-#include <string.h>
-#include "rk_mpi.h"
-
-#include "mpp_env.h"
-#include "mpp_mem.h"
-#include "mpp_time.h"
-#include "mpp_debug.h"
-#include "mpp_common.h"
-
-#include "utils.h"
-#include "mpi_enc_utils.h"
-#include "camera_source.h"
-#include "mpp_enc_roi_utils.h"
-#include "mpp_rc_api.h"
+#include "mpi_enc_test.h"
 
 typedef struct {
     // base flow context
@@ -687,6 +668,18 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
         MppBuffer cam_buf = NULL;
         RK_U32 eoi = 1;
 
+#ifdef _RGA_RESIZE_
+        void *yuv_data;
+        RK_U32 yuv_size;
+        MppMeta meta_scale = NULL;
+        MppFrame frame_scale = NULL;
+        MppPacket packet_scale = NULL;
+        void *buf_scale = mpp_buffer_get_ptr(p->frm_buf);
+        RK_S32 cam_frm_idx_scale = -1;
+        MppBuffer cam_buf_scale = NULL;
+        RK_U32 eoi_scale = 1;
+#endif
+
         if (p->fp_input) {
             mpp_buffer_sync_begin(p->frm_buf);
             ret = read_image(buf, p->fp_input, p->width, p->height,
@@ -726,7 +719,22 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
 
-                fwrite(camera_frame_to_start(p->cam_ctx, cam_frm_idx), 1, camera_frame_to_length(p->cam_ctx, cam_frm_idx), p->fp_output_yuv);
+#ifdef _RGA_RESIZE_
+                yuv_data = mpp_buffer_get_ptr(cam_buf);  // 指向 YUV 数据的指针
+                yuv_size = mpp_buffer_get_size(cam_buf); // YUV 数据的大小
+                MPP_RET ret = mpp_buffer_get(NULL, &cam_buf_scale, yuv_size);// 申请 MppBuffer
+                if (ret) {
+                    mpp_err("failed to allocate MppBuffer\n");
+                    return ret;
+                }
+                void *buf_ptr = mpp_buffer_get_ptr(cam_buf_scale);// 获取 MppBuffer 的内存指针
+                memcpy(buf_ptr, yuv_data, yuv_size);// 将 YUV 数据拷贝到 MppBuffer 中
+
+                printf("cam_buf:%p %zu %d %d %zu\n",mpp_buffer_get_ptr(cam_buf),mpp_buffer_get_size(cam_buf),mpp_buffer_get_index(cam_buf),mpp_buffer_get_fd(cam_buf),mpp_buffer_get_offset(cam_buf));
+                printf("cam_buf_scale:%p %zu %d %d %zu\n",mpp_buffer_get_ptr(cam_buf_scale),mpp_buffer_get_size(cam_buf_scale),mpp_buffer_get_index(cam_buf_scale),mpp_buffer_get_fd(cam_buf_scale),mpp_buffer_get_offset(cam_buf_scale));
+                if (p->fp_output_yuv)
+                    fwrite(mpp_buffer_get_ptr(cam_buf_scale), 1, mpp_buffer_get_size(cam_buf_scale), p->fp_output_yuv);
+#endif
             }
         }
 
@@ -745,6 +753,10 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
         if (p->fp_input && feof(p->fp_input))
             mpp_frame_set_buffer(frame, NULL);
+#ifdef _RGA_RESIZE_
+        else if (cam_buf_scale)
+            mpp_frame_set_buffer(frame, cam_buf_scale);
+#endif
         else if (cam_buf)
             mpp_frame_set_buffer(frame, cam_buf);
         else

@@ -32,7 +32,7 @@ add_executable(mpi_enc mpi_enc_test.c
         mpi_enc_utils.c
         mpi_dec_utils.c
         mpp_opt.c
-        utils.c
+        mpp_utils.c
         iniparser.c
         dictionary.c
         camera_source.c
@@ -45,7 +45,7 @@ add_executable(mpi_enc_mt mpi_enc_mt_test.cpp
         mpi_enc_utils.c
         mpi_dec_utils.c
         mpp_opt.c
-        utils.c
+        mpp_utils.c
         iniparser.c
         dictionary.c
         camera_source.c

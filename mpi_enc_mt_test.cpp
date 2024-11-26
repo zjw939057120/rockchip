@@ -27,7 +27,7 @@
 #include "mpp_debug.h"
 #include "mpp_common.h"
 
-#include "utils.h"
+#include "mpp_utils.h"
 #include "mpi_enc_utils.h"
 #include "camera_source.h"
 #include "mpp_enc_roi_utils.h"

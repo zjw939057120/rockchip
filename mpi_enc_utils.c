@@ -23,7 +23,7 @@
 #include "mpp_buffer.h"
 
 #include "rk_mpi.h"
-#include "utils.h"
+#include "mpp_utils.h"
 #include "mpp_common.h"
 
 #include "mpp_opt.h"

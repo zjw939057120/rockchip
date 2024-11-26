@@ -26,7 +26,7 @@
 #include "mpp_lock.h"
 #include "mpp_time.h"
 #include "mpp_common.h"
-#include "utils.h"
+#include "mpp_utils.h"
 
 #define MAX_HALF_WORD_SUM_CNT \
     ((RK_ULONG)((0-1) / ((1UL << ((__SIZEOF_POINTER__ * 8) / 2)) - 1)))

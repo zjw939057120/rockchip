@@ -18,7 +18,7 @@
 #define __MPI_DEC_UTILS_H__
 
 #include <stdio.h>
-#include "utils.h"
+#include "mpp_utils.h"
 
 #define MAX_FILE_NAME_LENGTH        256
 #define MPI_DEC_STREAM_SIZE         (SZ_4K)
