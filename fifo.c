@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/types.h>
 #include "fifo.h"
 
 void fifo_init() {
@@ -35,21 +36,21 @@ int fifo_read_open(const char *file) {
 }
 
 void fifo_write(int fd, void *buf, size_t len) {
-    printf("fifo_write start: %d %zu\n", buf, len);
+    printf("fifo_write start %d %zu\n", buf, len);
     size_t send = 0;
     while (send < len) {
         write(fd, buf + send, FIFO_MAX_SIZE);
         send += FIFO_MAX_SIZE;
-        printf("fifo_write: %p %d %zu\n", buf, len, send);
     }
+    printf("fifo_write done %d %zu\n", buf, len);
 }
 
 void fifo_read(int fd, void *buf, size_t len) {
-    printf("fifo_read start: %p %zu\n", buf, len);
+    printf("fifo_read start %p %zu\n", buf, len);
     size_t rev = 0;
     while (rev < len) {
         read(fd, buf + rev, FIFO_MAX_SIZE);
         rev += FIFO_MAX_SIZE;
-        printf("fifo_read: %p %d %zu\n", buf, len, rev);
     }
+    printf("fifo_read done %p %zu\n", buf, len);
 }

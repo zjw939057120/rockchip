@@ -26,7 +26,7 @@
 #include "mpp_enc_roi_utils.h"
 #include "mpp_rc_api.h"
 
-struct MPPResize{
+struct MPPResize {
     void *yuv_data;
     RK_U32 yuv_size;
     MppMeta meta_resize;
@@ -42,6 +42,7 @@ uint64_t tmp_num_0 = 0;
 
 #define _RGA_RESIZE_
 #define MAX_CHANNEL 8
+#define _OUTPUT_YUV_
 
 
 #endif //MPI_ENC_TEST_H

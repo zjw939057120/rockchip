@@ -224,6 +224,7 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
         }
     }
 
+#ifdef _OUTPUT_YUV_
     if (cmd->file_output_yuv) {
         p->fp_output_yuv = fopen(cmd->file_output_yuv, "w+b");
         if (NULL == p->fp_output_yuv) {
@@ -231,6 +232,7 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
             ret = MPP_ERR_OPEN_FILE;
         }
     }
+#endif
     if (cmd->fifo_input) {
         printf("open fifo_input %s start\n", cmd->fifo_input);
         p->fp_fifo_input = fifo_read_open(cmd->fifo_input);
@@ -690,10 +692,13 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 #endif
 
         if (p->fp_fifo_input) {
-            char buf_src[FIFO_BUF_SIZE + FIFO_MAX_SIZE];
-            fifo_read(p->fp_fifo_input, buf_src, FIFO_BUF_SIZE);
-            fwrite(buf_src, 1, FIFO_BUF_SIZE, p->fp_output_yuv);
-            exit(0);
+            mpp_buffer_sync_begin(p->frm_buf);
+            fifo_read(p->fp_fifo_input, buf, FIFO_BUF_SIZE);
+#ifdef _OUTPUT_YUV_
+//            if (p->fp_output_yuv)
+//                fwrite(buf, 1, FIFO_BUF_SIZE, p->fp_output_yuv);
+#endif
+            mpp_buffer_sync_end(p->frm_buf);
         } else if (p->fp_input) {
             mpp_buffer_sync_begin(p->frm_buf);
             ret = read_image(buf, p->fp_input, p->width, p->height,
@@ -733,14 +738,14 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
 
-#ifdef _RGA_RESIZE_
+                if(cmd->master == true && p->fp_fifo_output){
+                    fifo_write(p->fp_fifo_output,camera_frame_to_start(p->cam_ctx, cam_frm_idx), camera_frame_to_length(p->cam_ctx, cam_frm_idx));
+                }
+#ifdef _OUTPUT_YUV_
                 tmp_num_0++;
-                if (p->fp_output_yuv && tmp_num_0 == 1){
+                if (p->fp_output_yuv){
                     printf("cam_buf:%p %zu\n",camera_frame_to_start(p->cam_ctx, cam_frm_idx),camera_frame_to_length(p->cam_ctx, cam_frm_idx));
                     fwrite(camera_frame_to_start(p->cam_ctx, cam_frm_idx),1, camera_frame_to_length(p->cam_ctx, cam_frm_idx), p->fp_output_yuv);
-                }
-                if(cmd->master == true && p->fp_fifo_output && tmp_num_0 == 1){
-                    fifo_write(p->fp_fifo_output,camera_frame_to_start(p->cam_ctx, cam_frm_idx), camera_frame_to_length(p->cam_ctx, cam_frm_idx));
                 }
 #endif
             }
@@ -1214,12 +1219,14 @@ int main(int argc, char **argv)
     cmd[i]->chn_id = 1;
     cmd[i]->master = false;
     cmd[i]->file_output = "/opt/output_1.h264";
+#ifdef _OUTPUT_YUV_
     cmd[i]->file_output_yuv = "/opt/output_1.yuv";
+#endif
     cmd[i]->fifo_input = FIFO_NAME_1;
     cmd[i]->type = MPP_VIDEO_CodingAVC;
     cmd[i]->type_src = MPP_VIDEO_CodingUnused;
     cmd[i]->format = MPP_FMT_YUV420SP;
-    cmd[i]->frame_num = 10;
+    cmd[i]->frame_num = 200;
     cmd[i]->nthreads = 1;
     cmd[i]->width = 1280;
     cmd[i]->height = 720;
@@ -1236,12 +1243,14 @@ int main(int argc, char **argv)
     cmd[i]->master = true;
     cmd[i]->file_input = "/dev/video11";
     cmd[i]->file_output = "/opt/output_0.h264";
+#ifdef _OUTPUT_YUV_
     cmd[i]->file_output_yuv = "/opt/output_0.yuv";
+#endif
     cmd[i]->fifo_output = FIFO_NAME_1;
     cmd[i]->type = MPP_VIDEO_CodingAVC;
     cmd[i]->type_src = MPP_VIDEO_CodingUnused;
     cmd[i]->format = MPP_FMT_YUV420SP;
-    cmd[i]->frame_num = 10;
+    cmd[i]->frame_num = 200;
     cmd[i]->nthreads = 1;
     cmd[i]->width = 1280;
     cmd[i]->height = 720;
