@@ -4,6 +4,7 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include "fifo.h"
 
 void fifo_init() {
@@ -13,11 +14,11 @@ void fifo_init() {
     }
     unlink(FIFO_NAME_2);
     if (mkfifo(FIFO_NAME_2, 0666) == -1) {
-        perror("mkfifo "FIFO_NAME_3);
+        perror("mkfifo "FIFO_NAME_2);
     }
     unlink(FIFO_NAME_3);
     if (mkfifo(FIFO_NAME_3, 0666) == -1) {
-        perror("mkfifo "FIFO_NAME_3);
+        perror("mkfifo "FIFO_NAME_4);
     }
     unlink(FIFO_NAME_4);
     if (mkfifo(FIFO_NAME_4, 0666) == -1) {
@@ -25,22 +26,30 @@ void fifo_init() {
     }
 }
 
-void fifo_write(void *buf, size_t len, FILE *fp) {
-    printf("fifo_write: %d,%d\n", buf, len);
+int fifo_write_open(const char *file) {
+    return open(file, O_WRONLY | O_NONBLOCK);
+}
+
+int fifo_read_open(const char *file) {
+    return open(file, O_RDONLY);
+}
+
+void fifo_write(int fd, void *buf, size_t len) {
+    printf("fifo_write start: %d %zu\n", buf, len);
     size_t send = 0;
     while (send < len) {
-        fwrite(buf + send, 1, FIFO_MAX_SIZE, fp);
+        write(fd, buf + send, FIFO_MAX_SIZE);
         send += FIFO_MAX_SIZE;
-        if (send == len)return;
+        printf("fifo_write: %p %d %zu\n", buf, len, send);
     }
 }
 
-void fifo_read(void *buf, size_t len, FILE *fp) {
-    printf("fifo_read: %d,%d\n", buf, len);
+void fifo_read(int fd, void *buf, size_t len) {
+    printf("fifo_read start: %p %zu\n", buf, len);
     size_t rev = 0;
     while (rev < len) {
-        fread(buf + rev, 1, FIFO_MAX_SIZE, fp);
+        read(fd, buf + rev, FIFO_MAX_SIZE);
         rev += FIFO_MAX_SIZE;
-        if (rev == len)return;
+        printf("fifo_read: %p %d %zu\n", buf, len, rev);
     }
 }

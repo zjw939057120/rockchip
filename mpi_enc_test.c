@@ -37,8 +37,8 @@ typedef struct {
     FILE *fp_input;
     FILE *fp_output;
     FILE *fp_output_yuv;
-    FILE *fp_fifo_input;
-    FILE *fp_fifo_output;
+    int fp_fifo_input;
+    int fp_fifo_output;
     FILE *fp_verify;
 
     /* encoder config set */
@@ -232,26 +232,25 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
         }
     }
     if (cmd->fifo_input) {
-        p->fp_fifo_input = fopen(cmd->fifo_input, "rb");
-        if (NULL == p->fp_fifo_input) {
+        printf("open fifo_input %s start\n", cmd->fifo_input);
+        p->fp_fifo_input = fifo_read_open(cmd->fifo_input);
+        if (-1 == p->fp_fifo_input) {
             mpp_err("failed to open output file %s\n", cmd->fifo_input);
             ret = MPP_ERR_OPEN_FILE;
+        } else {
+            printf("open fifo_input %s done\n", cmd->fifo_input);
         }
     }
     if (cmd->fifo_output) {
-        p->fp_fifo_output = fopen(cmd->fifo_output, "w+b");
-        if (NULL == p->fp_fifo_output) {
+        printf("open fifo_output %s\n", cmd->fifo_output);
+        p->fp_fifo_output = fifo_write_open(cmd->fifo_output);
+        if (-1 == p->fp_fifo_output) {
             mpp_err("failed to open output file %s\n", cmd->fifo_output);
             ret = MPP_ERR_OPEN_FILE;
-        } else{
-            // 设置非阻塞模式
-/*            int fd = fileno(p->fp_fifo_output);  // 获取文件描述符
-            int flags = fcntl(fd, F_GETFL, 0);  // 获取文件状态标志
-            fcntl(fd, F_SETFL, flags | O_NONBLOCK);  // 设置为非阻塞模式
-            printf("output chn_id %d open done\n", cmd->chn_id);*/
+        } else {
+            printf("open fifo_output %s done\n", cmd->fifo_output);
         }
     }
-
     if (cmd->file_slt) {
         p->fp_verify = fopen(cmd->file_slt, "wt");
         if (!p->fp_verify)
@@ -326,14 +325,6 @@ MPP_RET test_ctx_deinit(MpiEncTestData *p)
         if (p->fp_output_yuv) {
             fclose(p->fp_output_yuv);
             p->fp_output_yuv = NULL;
-        }
-        if (p->fp_fifo_input) {
-            fclose(p->fp_fifo_input);
-            p->fp_fifo_input = NULL;
-        }
-        if (p->fp_fifo_output) {
-            fclose(p->fp_fifo_output);
-            p->fp_fifo_output = NULL;
         }
         if (p->fp_verify) {
             fclose(p->fp_verify);
@@ -698,7 +689,12 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
         mppResize.eoi_resize = 1;
 #endif
 
-        if (p->fp_input) {
+        if (p->fp_fifo_input) {
+            char buf_src[FIFO_BUF_SIZE + FIFO_MAX_SIZE];
+            fifo_read(p->fp_fifo_input, buf_src, FIFO_BUF_SIZE);
+            fwrite(buf_src, 1, FIFO_BUF_SIZE, p->fp_output_yuv);
+            exit(0);
+        } else if (p->fp_input) {
             mpp_buffer_sync_begin(p->frm_buf);
             ret = read_image(buf, p->fp_input, p->width, p->height,
                              p->hor_stride, p->ver_stride, p->fmt);
@@ -738,13 +734,13 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 mpp_assert(cam_buf);
 
 #ifdef _RGA_RESIZE_
-                if (p->fp_output_yuv){
-                    printf("cam_buf:%p %zu %d %d %zu\n",mpp_buffer_get_ptr(cam_buf),mpp_buffer_get_size(cam_buf),mpp_buffer_get_index(cam_buf),mpp_buffer_get_fd(cam_buf),mpp_buffer_get_offset(cam_buf));
-                    fwrite(mpp_buffer_get_ptr(cam_buf),1, mpp_buffer_get_size(cam_buf), p->fp_output_yuv);
+                tmp_num_0++;
+                if (p->fp_output_yuv && tmp_num_0 == 1){
+                    printf("cam_buf:%p %zu\n",camera_frame_to_start(p->cam_ctx, cam_frm_idx),camera_frame_to_length(p->cam_ctx, cam_frm_idx));
+                    fwrite(camera_frame_to_start(p->cam_ctx, cam_frm_idx),1, camera_frame_to_length(p->cam_ctx, cam_frm_idx), p->fp_output_yuv);
                 }
-                if(cmd->master == true && p->fp_fifo_output){
-                    //printf("fifo_write \n");
-                    //fifo_write(camera_frame_to_start(cam_buf, cam_frm_idx), camera_frame_to_length(cam_buf, cam_frm_idx),p->fp_fifo_output);
+                if(cmd->master == true && p->fp_fifo_output && tmp_num_0 == 1){
+                    fifo_write(p->fp_fifo_output,camera_frame_to_start(p->cam_ctx, cam_frm_idx), camera_frame_to_length(p->cam_ctx, cam_frm_idx));
                 }
 #endif
             }
@@ -1212,6 +1208,28 @@ int main(int argc, char **argv)
     MpiEncTestArgs* cmd[MAX_CHANNEL];
     uint8_t i;
     int result;
+
+    i = 1;
+    cmd[i] = mpi_enc_test_cmd_get();
+    cmd[i]->chn_id = 1;
+    cmd[i]->master = false;
+    cmd[i]->file_output = "/opt/output_1.h264";
+    cmd[i]->file_output_yuv = "/opt/output_1.yuv";
+    cmd[i]->fifo_input = FIFO_NAME_1;
+    cmd[i]->type = MPP_VIDEO_CodingAVC;
+    cmd[i]->type_src = MPP_VIDEO_CodingUnused;
+    cmd[i]->format = MPP_FMT_YUV420SP;
+    cmd[i]->frame_num = 10;
+    cmd[i]->nthreads = 1;
+    cmd[i]->width = 1280;
+    cmd[i]->height = 720;
+    cmd[i]->bps_target = 2048 * 1024;
+    result = pthread_create(&cmd[i]->thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, cmd[i]);
+    if (result != 0) {
+        printf("Error creating thread. Error code: %d\n", result);
+    }
+    //master
+    sleep(3);
     i = 0;
     cmd[i] = mpi_enc_test_cmd_get();
     cmd[i]->chn_id = 0;
@@ -1233,26 +1251,6 @@ int main(int argc, char **argv)
         printf("Error creating thread. Error code: %d\n", result);
     }
 
-//    i = 1;
-//    cmd[i] = mpi_enc_test_cmd_get();
-//    cmd[i]->chn_id = 1;
-//    cmd[i]->master = false;
-//    cmd[i]->file_input = "/opt/output.yuv";
-//    cmd[i]->file_output = "/opt/output_1.h264";
-//    cmd[i]->file_output_yuv = "/opt/output_1.yuv";
-//    cmd[i]->fifo_input = FIFO_NAME_1;
-//    cmd[i]->type = MPP_VIDEO_CodingAVC;
-//    cmd[i]->type_src = MPP_VIDEO_CodingUnused;
-//    cmd[i]->format = MPP_FMT_YUV420SP;
-//    cmd[i]->frame_num = 10;
-//    cmd[i]->nthreads = 1;
-//    cmd[i]->width = 1280;
-//    cmd[i]->height = 720;
-//    cmd[i]->bps_target = 2048 * 1024;
-    //result = pthread_create(&cmd[i]->thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, cmd[i]);
-    if (result != 0) {
-        printf("Error creating thread. Error code: %d\n", result);
-    }
 
     while (1) {
         sleep(1000);

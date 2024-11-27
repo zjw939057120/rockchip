@@ -38,6 +38,8 @@ struct MPPResize{
     RK_U32 eoi_resize;
 };
 
+uint64_t tmp_num_0 = 0;
+
 #define _RGA_RESIZE_
 #define MAX_CHANNEL 8
 
