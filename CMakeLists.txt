@@ -6,9 +6,9 @@ project(mpp_test_1.0.7)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 
-include_directories(inc inc/base inc/osal inc/utils)
+include_directories(inc inc/base inc/osal inc/utils inc/librga librga_utils/inc)
 link_directories(lib)
-link_libraries(rockchip_mpp mpp_base pthread)
+link_libraries(-lrockchip_mpp -lmpp_base -lpthread -lrga -ldl)
 
 #add_executable(mpp_test main.cpp)
 
@@ -27,7 +27,6 @@ link_libraries(rockchip_mpp mpp_base pthread)
 # mpi encoder unit test
 add_executable(mpi_enc mpi_enc_test.c
         fifo.c
-        mpi_enc_test.c
         #utils
         mpp_enc_roi_utils.c
         mpi_enc_utils.c
@@ -37,6 +36,11 @@ add_executable(mpi_enc mpi_enc_test.c
         iniparser.c
         dictionary.c
         camera_source.c
+        #librga
+        rga_resize_demo.cpp
+        librga_utils/src/dma_alloc.cpp
+        librga_utils/src/drm_alloc.cpp
+        librga_utils/src/librga_utils.cpp
         )
 
 # mpi encoder multi-thread input / output unit test

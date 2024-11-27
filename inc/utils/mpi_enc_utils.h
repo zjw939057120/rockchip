@@ -30,6 +30,7 @@ typedef struct MpiEncTestArgs_t {
     bool                master;
     size_t              length;
     char                *file_output_yuv;
+    char                *file_output_yuv_scale;
     char                *fifo_input;
     char                *fifo_output;
     pthread_t           thread_id;

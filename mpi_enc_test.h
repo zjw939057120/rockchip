@@ -25,6 +25,7 @@
 #include "camera_source.h"
 #include "mpp_enc_roi_utils.h"
 #include "mpp_rc_api.h"
+#include "rga_resize_demo.h"
 
 struct MPPResize {
     void *yuv_data;
@@ -43,6 +44,9 @@ uint64_t tmp_num_0 = 0;
 #define _RGA_RESIZE_
 #define MAX_CHANNEL 8
 #define _OUTPUT_YUV_
+#define _OUTPUT_YUV_SCALE_
 
+MpiEncTestArgs cmd[MAX_CHANNEL];
+RGAResizeParam resizeParam[MAX_CHANNEL];
 
 #endif //MPI_ENC_TEST_H

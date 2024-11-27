@@ -37,6 +37,7 @@ typedef struct {
     FILE *fp_input;
     FILE *fp_output;
     FILE *fp_output_yuv;
+    FILE *fp_output_yuv_scale;
     int fp_fifo_input;
     int fp_fifo_output;
     FILE *fp_verify;
@@ -233,6 +234,15 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
         }
     }
 #endif
+#ifdef _OUTPUT_YUV_SCALE_
+    if (cmd->file_output_yuv_scale) {
+        p->fp_output_yuv_scale = fopen(cmd->file_output_yuv_scale, "w+b");
+        if (NULL == p->fp_output_yuv_scale) {
+            mpp_err("failed to open output file %s\n", cmd->file_output_yuv_scale);
+            ret = MPP_ERR_OPEN_FILE;
+        }
+    }
+#endif
     if (cmd->fifo_input) {
         printf("open fifo_input %s start\n", cmd->fifo_input);
         p->fp_fifo_input = fifo_read_open(cmd->fifo_input);
@@ -327,6 +337,10 @@ MPP_RET test_ctx_deinit(MpiEncTestData *p)
         if (p->fp_output_yuv) {
             fclose(p->fp_output_yuv);
             p->fp_output_yuv = NULL;
+        }
+        if (p->fp_output_yuv_scale) {
+            fclose(p->fp_output_yuv_scale);
+            p->fp_output_yuv_scale = NULL;
         }
         if (p->fp_verify) {
             fclose(p->fp_verify);
@@ -737,16 +751,24 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
+
+                void* start = camera_frame_to_start(p->cam_ctx, cam_frm_idx);
+                size_t length = camera_frame_to_length(p->cam_ctx, cam_frm_idx);
 #ifdef _OUTPUT_YUV_
-                tmp_num_0++;
                 if (p->fp_output_yuv){
-                    printf("cam_buf:%p %zu\n",camera_frame_to_start(p->cam_ctx, cam_frm_idx),camera_frame_to_length(p->cam_ctx, cam_frm_idx));
-                    fwrite(camera_frame_to_start(p->cam_ctx, cam_frm_idx),1, camera_frame_to_length(p->cam_ctx, cam_frm_idx), p->fp_output_yuv);
+                    printf("cam_buf:%p %zu\n", start, length);
+                    fwrite(start,1 , length, p->fp_output_yuv);
                 }
 #endif
-                if(cmd->master == true && p->fp_fifo_output){
-                    fifo_write(p->fp_fifo_output,camera_frame_to_start(p->cam_ctx, cam_frm_idx), camera_frame_to_length(p->cam_ctx, cam_frm_idx));
+#ifdef _OUTPUT_YUV_SCALE_
+                if (p->fp_output_yuv_scale){
+                    void * scale = rga_resize_from_frame(&resizeParam[cmd->chn_id], start, length);
+                    fwrite(scale, 1, resizeParam[cmd->chn_id].src_size, p->fp_output_yuv_scale);
+                    if(cmd->master == true && p->fp_fifo_output){
+                        fifo_write(p->fp_fifo_output,scale, resizeParam[cmd->chn_id].src_size);
+                    }
                 }
+#endif
             }
         }
 
@@ -1196,6 +1218,11 @@ int enc_test_multi(MpiEncTestArgs* cmd, const char *name)
 }
 
 int enc_test_multi_ex(MpiEncTestArgs* cmd){
+    if(cmd->file_output_yuv_scale){
+        resizeParam[cmd->chn_id].src_size = rga_src_sieze(&resizeParam[cmd->chn_id]);
+        rga_resize_init(&resizeParam[cmd->chn_id]);
+    }
+
     cmd->length = cmd->width*cmd->height*3/2;//NV12
     printf("width %d, height %d, length %zu\n",cmd->width, cmd->height, cmd->length);
     enc_test_multi(cmd,cmd->file_input);
@@ -1210,52 +1237,72 @@ int main(int argc, char **argv)
 
     fifo_init();
 
-    MpiEncTestArgs* cmd[MAX_CHANNEL];
     uint8_t i;
     int result;
 
     i = 1;
-    cmd[i] = mpi_enc_test_cmd_get();
-    cmd[i]->chn_id = 1;
-    cmd[i]->master = false;
-    cmd[i]->file_output = "/opt/output_1.h264";
+    cmd[i].chn_id = i;
+    cmd[i].master = false;
+    cmd[i].file_output = "/opt/output_1.h264";
 #ifdef _OUTPUT_YUV_
-    cmd[i]->file_output_yuv = "/opt/output_1.yuv";
+    cmd[i].file_output_yuv = "/opt/output_1.yuv";
 #endif
-    cmd[i]->fifo_input = FIFO_NAME_1;
-    cmd[i]->type = MPP_VIDEO_CodingAVC;
-    cmd[i]->type_src = MPP_VIDEO_CodingUnused;
-    cmd[i]->format = MPP_FMT_YUV420SP;
-    cmd[i]->frame_num = 200;
-    cmd[i]->nthreads = 1;
-    cmd[i]->width = 1280;
-    cmd[i]->height = 720;
-    cmd[i]->bps_target = 2048 * 1024;
-    result = pthread_create(&cmd[i]->thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, cmd[i]);
+    cmd[i].fifo_input = FIFO_NAME_1;
+    cmd[i].type = MPP_VIDEO_CodingAVC;
+    cmd[i].type_src = MPP_VIDEO_CodingUnused;
+    cmd[i].format = MPP_FMT_YUV420SP;
+    cmd[i].frame_num = 200;
+    cmd[i].nthreads = 1;
+    cmd[i].width = 1280;
+    cmd[i].height = 720;
+    cmd[i].bps_target = 2048 * 1024;
+#ifdef _OUTPUT_YUV_SCALE_
+    resizeParam[i].chn_id = i;
+    resizeParam[i].src_width = cmd[i].width;
+    resizeParam[i].src_height = cmd[i].height;
+    resizeParam[i].src_format = RK_FORMAT_YCbCr_420_SP;
+
+    resizeParam[i].dst_width = 1280;
+    resizeParam[i].dst_height = 720;
+    resizeParam[i].dst_format = RK_FORMAT_YCbCr_420_SP;
+    cmd[i].file_output_yuv_scale = "/opt/output_sacle_0.yuv";
+#endif
+    result = pthread_create(&cmd[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &cmd[i]);
     if (result != 0) {
         printf("Error creating thread. Error code: %d\n", result);
     }
+
     //master
     sleep(3);
     i = 0;
-    cmd[i] = mpi_enc_test_cmd_get();
-    cmd[i]->chn_id = 0;
-    cmd[i]->master = true;
-    cmd[i]->file_input = "/dev/video11";
-    cmd[i]->file_output = "/opt/output_0.h264";
+    cmd[i].chn_id = i;
+    cmd[i].master = true;
+    cmd[i].file_input = "/dev/video11";
+    cmd[i].file_output = "/opt/output_0.h264";
 #ifdef _OUTPUT_YUV_
-    cmd[i]->file_output_yuv = "/opt/output_0.yuv";
+    cmd[i].file_output_yuv = "/opt/output_0.yuv";
 #endif
-    cmd[i]->fifo_output = FIFO_NAME_1;
-    cmd[i]->type = MPP_VIDEO_CodingAVC;
-    cmd[i]->type_src = MPP_VIDEO_CodingUnused;
-    cmd[i]->format = MPP_FMT_YUV420SP;
-    cmd[i]->frame_num = 200;
-    cmd[i]->nthreads = 1;
-    cmd[i]->width = 1280;
-    cmd[i]->height = 720;
-    cmd[i]->bps_target = 2048 * 1024;
-    result = pthread_create(&cmd[i]->thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, cmd[i]);
+    cmd[i].fifo_output = FIFO_NAME_1;
+    cmd[i].type = MPP_VIDEO_CodingAVC;
+    cmd[i].type_src = MPP_VIDEO_CodingUnused;
+    cmd[i].format = MPP_FMT_YUV420SP;
+    cmd[i].frame_num = 200;
+    cmd[i].nthreads = 1;
+    cmd[i].width = 1280;
+    cmd[i].height = 720;
+    cmd[i].bps_target = 2048 * 1024;
+#ifdef _OUTPUT_YUV_SCALE_
+    resizeParam[i].chn_id = i;
+    resizeParam[i].src_width = cmd[i].width;
+    resizeParam[i].src_height = cmd[i].height;
+    resizeParam[i].src_format = RK_FORMAT_YCbCr_420_SP;
+
+    resizeParam[i].dst_width = 1280;
+    resizeParam[i].dst_height = 720;
+    resizeParam[i].dst_format = RK_FORMAT_YCbCr_420_SP;
+    cmd[i].file_output_yuv_scale = "/opt/output_sacle_0.yuv";
+#endif
+    result = pthread_create(&cmd[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &cmd[i]);
     if (result != 0) {
         printf("Error creating thread. Error code: %d\n", result);
     }

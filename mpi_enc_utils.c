@@ -839,7 +839,7 @@ MPP_RET mpi_enc_test_cmd_put(MpiEncTestArgs* cmd)
         close(cmd->fifo_output);
     MPP_FREE(cmd->file_cfg);
     MPP_FREE(cmd->file_slt);
-    MPP_FREE(cmd);
+//    MPP_FREE(cmd);
 
     return MPP_OK;
 }
