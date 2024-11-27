@@ -693,10 +693,10 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
         if (p->fp_fifo_input) {
             mpp_buffer_sync_begin(p->frm_buf);
-            fifo_read(p->fp_fifo_input, buf, FIFO_BUF_SIZE);
+            fifo_read(p->fp_fifo_input, buf, cmd->length);
 #ifdef _OUTPUT_YUV_
-//            if (p->fp_output_yuv)
-//                fwrite(buf, 1, FIFO_BUF_SIZE, p->fp_output_yuv);
+            if (p->fp_output_yuv)
+                fwrite(buf, 1, cmd->length, p->fp_output_yuv);
 #endif
             mpp_buffer_sync_end(p->frm_buf);
         } else if (p->fp_input) {
@@ -737,10 +737,6 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
-
-                if(cmd->master == true && p->fp_fifo_output){
-                    fifo_write(p->fp_fifo_output,camera_frame_to_start(p->cam_ctx, cam_frm_idx), camera_frame_to_length(p->cam_ctx, cam_frm_idx));
-                }
 #ifdef _OUTPUT_YUV_
                 tmp_num_0++;
                 if (p->fp_output_yuv){
@@ -748,6 +744,9 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                     fwrite(camera_frame_to_start(p->cam_ctx, cam_frm_idx),1, camera_frame_to_length(p->cam_ctx, cam_frm_idx), p->fp_output_yuv);
                 }
 #endif
+                if(cmd->master == true && p->fp_fifo_output){
+                    fifo_write(p->fp_fifo_output,camera_frame_to_start(p->cam_ctx, cam_frm_idx), camera_frame_to_length(p->cam_ctx, cam_frm_idx));
+                }
             }
         }
 
@@ -1197,7 +1196,8 @@ int enc_test_multi(MpiEncTestArgs* cmd, const char *name)
 }
 
 int enc_test_multi_ex(MpiEncTestArgs* cmd){
-
+    cmd->length = cmd->width*cmd->height*3/2;//NV12
+    printf("width %d, height %d, length %zu\n",cmd->width, cmd->height, cmd->length);
     enc_test_multi(cmd,cmd->file_input);
 
 DONE:

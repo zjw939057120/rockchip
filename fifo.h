@@ -7,8 +7,7 @@
 
 #include <stdio.h>
 
-#define FIFO_BUF_SIZE 1382400
-#define FIFO_MAX_SIZE 65535 //64KB
+#define FIFO_MAX_SIZE 65535/2 //32KB
 #define FIFO_NAME_1 "/tmp/mpp_fifo_1"
 #define FIFO_NAME_2 "/tmp/mpp_fifo_2"
 #define FIFO_NAME_3 "/tmp/mpp_fifo_3"

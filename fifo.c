@@ -41,6 +41,7 @@ void fifo_write(int fd, void *buf, size_t len) {
     while (send < len) {
         write(fd, buf + send, FIFO_MAX_SIZE);
         send += FIFO_MAX_SIZE;
+        usleep(10);
     }
     printf("fifo_write done %d %zu\n", buf, len);
 }

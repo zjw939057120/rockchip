@@ -28,6 +28,7 @@ typedef struct MpiEncTestArgs_t {
     char                *file_output;
     RK_S32              chn_id;
     bool                master;
+    size_t              length;
     char                *file_output_yuv;
     char                *fifo_input;
     char                *fifo_output;
