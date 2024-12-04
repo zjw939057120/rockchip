@@ -103,6 +103,9 @@ typedef struct MpiEncTestArgs_t {
     RK_U32              psnr_en;
     RK_U32              ssim_en;
     char                *file_slt;
+    uint8_t chn_id;
+    const char *file_output_yuv;
+    pthread_t thread_id;
 } MpiEncTestArgs;
 
 #ifdef __cplusplus

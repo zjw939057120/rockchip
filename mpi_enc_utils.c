@@ -831,11 +831,11 @@ MPP_RET mpi_enc_test_cmd_put(MpiEncTestArgs* cmd)
         cmd->fps = NULL;
     }
 
-    MPP_FREE(cmd->file_input);
-    MPP_FREE(cmd->file_output);
+    //MPP_FREE(cmd->file_input);
+    //MPP_FREE(cmd->file_output);
     MPP_FREE(cmd->file_cfg);
     MPP_FREE(cmd->file_slt);
-    MPP_FREE(cmd);
+    //MPP_FREE(cmd);
 
     return MPP_OK;
 }

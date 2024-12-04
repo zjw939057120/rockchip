@@ -14,26 +14,7 @@
  * limitations under the License.
  */
 
-#if defined(_WIN32)
-#include "vld.h"
-#endif
-
-#define MODULE_TAG "mpi_enc_test"
-
-#include <string.h>
-#include "rk_mpi.h"
-
-#include "mpp_env.h"
-#include "mpp_mem.h"
-#include "mpp_time.h"
-#include "mpp_debug.h"
-#include "mpp_common.h"
-
-#include "utils.h"
-#include "mpi_enc_utils.h"
-#include "camera_source.h"
-#include "mpp_enc_roi_utils.h"
-#include "mpp_rc_api.h"
+#include "mpi_enc_test.h"
 
 typedef struct {
     // base flow context
@@ -54,6 +35,7 @@ typedef struct {
     // src and dst
     FILE *fp_input;
     FILE *fp_output;
+    FILE *fp_output_yuv;
     FILE *fp_verify;
 
     /* encoder config set */
@@ -238,6 +220,13 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
             ret = MPP_ERR_OPEN_FILE;
         }
     }
+    if (cmd->file_output_yuv) {
+        p->fp_output_yuv = fopen(cmd->file_output_yuv, "w+b");
+        if (NULL == p->fp_output_yuv) {
+            mpp_err("failed to open output file %s\n", cmd->file_output_yuv);
+            ret = MPP_ERR_OPEN_FILE;
+        }
+    }
 
     if (cmd->file_slt) {
         p->fp_verify = fopen(cmd->file_slt, "wt");
@@ -309,6 +298,10 @@ MPP_RET test_ctx_deinit(MpiEncTestData *p)
         if (p->fp_output) {
             fclose(p->fp_output);
             p->fp_output = NULL;
+        }
+        if (p->fp_output_yuv) {
+            fclose(p->fp_output_yuv);
+            p->fp_output_yuv = NULL;
         }
         if (p->fp_verify) {
             fclose(p->fp_verify);
@@ -649,6 +642,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
             if (p->fp_output)
                 fwrite(ptr, 1, len, p->fp_output);
+            mpp_packet_send(cmd->chn_id, ptr, 1, len);
         }
 
         mpp_packet_deinit(&packet);
@@ -854,6 +848,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 if (p->fp_output)
                     fwrite(ptr, 1, len, p->fp_output);
+                mpp_packet_send(cmd->chn_id, ptr, 1, len);
 
                 if (p->fp_verify && !p->pkt_eos) {
                     calc_data_crc((RK_U8 *)ptr, (RK_U32)len, &checkcrc);
@@ -921,8 +916,10 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
         if (cam_frm_idx >= 0)
             camera_source_put_frame(p->cam_ctx, cam_frm_idx);
 
+#ifdef _FILE_OUTPUT_YUV_
         if (p->frame_num > 0 && p->frame_count >= p->frame_num)
             break;
+#endif
 
         if (p->loop_end)
             break;
@@ -1144,22 +1141,56 @@ int enc_test_multi(MpiEncTestArgs* cmd, const char *name)
     return ret;
 }
 
+#ifdef _FILE_OUTPUT_YUV_
+
 int main(int argc, char **argv)
+#else
+void *startHisiCapture(void *arg)
+#endif
 {
-    RK_S32 ret = MPP_NOK;
-    MpiEncTestArgs* cmd = mpi_enc_test_cmd_get();
+    uint8_t i;
+    char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/video33", "/dev/video44"};
+    char *file_output[4] = {"/opt/output_0.h264", "/opt/output_1.h264", "/opt/output_2.h264", "/opt/output_3.h264"};
+    char *file_output_yuv[4] = {"/opt/output_0.yuv", "/opt/output_1.yuv", "/opt/output_2.yuv", "/opt/output_3.yuv"};
+    for (int j = 0; j < 1; ++j) {
+        i = 0;
+        mpiEncTestArgs[i].chn_id = i;
+        mpiEncTestArgs[i].file_input = file_input[i];
+        mpiEncTestArgs[i].file_output = file_output[i];
+#ifdef _FILE_OUTPUT_YUV_
+        mpiEncTestArgs[i].file_output_yuv = file_output_yuv[i];
+#endif
+        mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
+        mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
+        mpiEncTestArgs[i].format = MPP_FMT_YUV420SP;
+        mpiEncTestArgs[i].frame_num = 100;
+        mpiEncTestArgs[i].nthreads = 1;
+        mpiEncTestArgs[i].width = 1280;
+        mpiEncTestArgs[i].height = 720;
+        mpiEncTestArgs[i].bps_target = 2048 * 1024;
 
-    // parse the cmd option
-    ret = mpi_enc_test_cmd_update_by_args(cmd, argc, argv);
-    if (ret)
-        goto DONE;
+        pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
+    }
 
+    while (1) {
+        sleep(60);
+    }
+
+}
+
+void enc_test_multi_ex(MpiEncTestArgs *cmd) {
     mpi_enc_test_cmd_show_opt(cmd);
 
-    ret = enc_test_multi(cmd, argv[0]);
+    enc_test_multi(cmd, cmd->file_input);
 
-DONE:
+    DONE:
     mpi_enc_test_cmd_put(cmd);
 
-    return ret;
+}
+
+void mpp_packet_send(uint8_t chn_id, void *pVoid, int i, size_t len) {
+#ifndef _FILE_OUTPUT_YUV_
+    RK_U64 timestamp = SystemGetMSCount();// RK_MPI_MB_GetTimestamp(mb)/1000;
+    CapFun(chn_id, pVoid, streamType, len, len, timestamp, timestamp, 1);
+#endif
 }
