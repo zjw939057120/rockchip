@@ -6,9 +6,9 @@ project(mpp_test_1.0.7)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 
-include_directories(inc inc/base inc/osal inc/utils)
+include_directories(inc inc/base inc/osal inc/utils inc/librga)
 link_directories(lib)
-link_libraries(rockchip_mpp mpp_base pthread)
+link_libraries(rockchip_mpp mpp_base rga pthread)
 
 #add_executable(mpp_test main.cpp)
 
@@ -39,20 +39,26 @@ add_executable(mpi_enc mpi_enc_test.c
         )
 
 # mpi encoder multi-thread input / output unit test
-add_executable(mpi_enc_mt mpi_enc_mt_test.cpp
-        #utils
-        mpp_enc_roi_utils.c
-        mpi_enc_utils.c
-        mpi_dec_utils.c
-        mpp_opt.c
-        mpp_utils.c
-        iniparser.c
-        dictionary.c
-        camera_source.c
-        )
+#add_executable(mpi_enc_mt mpi_enc_mt_test.cpp
+#        #utils
+#        mpp_enc_roi_utils.c
+#        mpi_enc_utils.c
+#        mpi_dec_utils.c
+#        mpp_opt.c
+#        mpp_utils.c
+#        iniparser.c
+#        dictionary.c
+#        camera_source.c
+#        )
 
 # new mpi rc unit test
 #add_executable(mpi_rc2 mpi_rc2_test.c)
 
 # new dec multi unit test
 #add_executable(mpi_dec_multi_test mpi_dec_multi_test.c)
+
+# rga_alpha_yuv_demo
+add_executable(rga_alpha_yuv_demo
+        rga_alpha_yuv_demo.cpp
+        librga_utils.cpp
+        )
