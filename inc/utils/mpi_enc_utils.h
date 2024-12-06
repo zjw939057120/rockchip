@@ -132,6 +132,8 @@ MPP_RET mpi_enc_test_cmd_put(MpiEncTestArgs* cmd);
 
 MPP_RET mpi_enc_test_cmd_show_opt(MpiEncTestArgs* cmd);
 
+void dump_mpp_buffer_to_file(MppBuffer *buffer, FILE *fp);
+
 #ifdef __cplusplus
 }
 #endif

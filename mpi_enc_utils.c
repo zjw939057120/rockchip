@@ -23,7 +23,7 @@
 #include "mpp_buffer.h"
 
 #include "rk_mpi.h"
-#include "utils.h"
+#include "mpp_utils.h"
 #include "mpp_common.h"
 
 #include "mpp_opt.h"
@@ -1190,4 +1190,8 @@ MPP_RET mpi_enc_test_cmd_show_opt(MpiEncTestArgs* cmd)
         mpp_log("verify     : %s\n", cmd->file_slt);
 
     return MPP_OK;
+}
+
+void dump_mpp_buffer_to_file(MppBuffer *buffer, FILE *fp) {
+    fwrite(mpp_buffer_get_ptr(buffer), 1, mpp_buffer_get_size(buffer), fp);
 }

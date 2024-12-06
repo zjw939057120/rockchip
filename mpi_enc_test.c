@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <signal.h>
 #include "mpi_enc_test.h"
 
 typedef struct {
@@ -213,6 +214,7 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
         }
     }
 
+#ifdef  _FILE_OUTPUT_
     if (cmd->file_output) {
         p->fp_output = fopen(cmd->file_output, "w+b");
         if (NULL == p->fp_output) {
@@ -220,6 +222,8 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
             ret = MPP_ERR_OPEN_FILE;
         }
     }
+#endif
+#ifdef  _FILE_OUTPUT_YUV_
     if (cmd->file_output_yuv) {
         p->fp_output_yuv = fopen(cmd->file_output_yuv, "w+b");
         if (NULL == p->fp_output_yuv) {
@@ -227,7 +231,7 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
             ret = MPP_ERR_OPEN_FILE;
         }
     }
-
+#endif
     if (cmd->file_slt) {
         p->fp_verify = fopen(cmd->file_slt, "wt");
         if (!p->fp_verify)
@@ -640,8 +644,10 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
             void *ptr   = mpp_packet_get_pos(packet);
             size_t len  = mpp_packet_get_length(packet);
 
+#ifdef _FILE_OUTPUT_
             if (p->fp_output)
                 fwrite(ptr, 1, len, p->fp_output);
+#endif
             mpp_packet_send(cmd->chn_id, ptr, 1, len);
         }
 
@@ -694,6 +700,9 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
+#ifdef _FILE_OUTPUT_YUV_
+                dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv);
+#endif
             }
         }
 
@@ -846,8 +855,10 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 p->pkt_eos = mpp_packet_get_eos(packet);
 
+#ifdef _FILE_OUTPUT_
                 if (p->fp_output)
                     fwrite(ptr, 1, len, p->fp_output);
+#endif
                 mpp_packet_send(cmd->chn_id, ptr, 1, len);
 
                 if (p->fp_verify && !p->pkt_eos) {
@@ -916,9 +927,11 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
         if (cam_frm_idx >= 0)
             camera_source_put_frame(p->cam_ctx, cam_frm_idx);
 
-#ifdef _FILE_OUTPUT_YUV_
-        if (p->frame_num > 0 && p->frame_count >= p->frame_num)
+#ifdef _FILE_OUTPUT_TEST_
+        if (p->frame_num > 0 && p->frame_count >= p->frame_num){
+            kill(getppid(), SIGQUIT);
             break;
+        }
 #endif
 
         if (p->loop_end)

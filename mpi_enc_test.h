@@ -20,7 +20,7 @@
 #include "mpp_debug.h"
 #include "mpp_common.h"
 
-#include "utils.h"
+#include "mpp_utils.h"
 #include "mpi_enc_utils.h"
 #include "camera_source.h"
 #include "mpp_enc_roi_utils.h"
@@ -31,7 +31,9 @@ void enc_test_multi_ex(MpiEncTestArgs* cmd);
 void mpp_packet_send(uint8_t chn_id, void *pVoid, int i, size_t len);
 
 #define _OUTPUT_CHANNEL_MAX_ 4
+#define _FILE_OUTPUT_
 #define _FILE_OUTPUT_YUV_
+#define _FILE_OUTPUT_TEST_
 MpiEncTestArgs mpiEncTestArgs[_OUTPUT_CHANNEL_MAX_];
 uint8_t streamType = 0;  //XSTRIVE_STREAM_VIDEO_H264
 
