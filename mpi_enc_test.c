@@ -701,7 +701,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
 #ifdef _FILE_OUTPUT_YUV_
-                dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv);
+                //dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv);
 #endif
             }
         }
@@ -768,7 +768,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
             if (p->osd_enable) {
                 /* gen and cfg osd plt */
-                mpi_enc_gen_osd_plt(&p->osd_plt, 0);
+                mpi_enc_gen_osd_plt(&p->osd_plt, 0, p->fp_output_yuv);
 
                 p->osd_plt_cfg.change = MPP_ENC_OSD_PLT_CFG_CHANGE_ALL;
                 p->osd_plt_cfg.type = MPP_ENC_OSD_PLT_TYPE_USERDEF;
@@ -782,7 +782,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 /* gen and cfg osd plt */
                 mpi_enc_gen_osd_data(&p->osd_data, p->buf_grp, p->width,
-                                     p->height, 0);
+                                     p->height, 0, p->fp_output_yuv);
                 mpp_meta_set_ptr(meta, KEY_OSD_DATA, (void*)&p->osd_data);
             }
 

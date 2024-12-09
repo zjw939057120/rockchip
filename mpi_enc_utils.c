@@ -1077,7 +1077,7 @@ MPP_RET mpi_enc_gen_smart_gop_ref_cfg(MppEncRefCfg ref, RK_S32 gop_len, RK_S32 v
     return ret;
 }
 
-MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt)
+MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt, FILE *fp_output)
 {
     /*
      * osd idx size range from 16x16 bytes(pixels) to hor_stride*ver_stride(bytes).
@@ -1105,7 +1105,7 @@ MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt)
 }
 
 MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
-                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt)
+                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt, FILE *fp_output)
 {
     MppEncOSDRegion *region = NULL;
     RK_U32 k = 0;
@@ -1171,8 +1171,11 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
             mb_h = region->num_mb_y;
             buf_offset = region->buf_offset;
 
-            memset(ptr + buf_offset, k, mb_w * mb_h * 256);
+                for (int i = 0; i < mb_w * mb_h * 256 ; ++i) {
+                memset(ptr + buf_offset+i, i % 8, 1);
+            }
         }
+        dump_mpp_buffer_to_file(buf,fp_output);
     }
 
     osd_data->buf = buf;
