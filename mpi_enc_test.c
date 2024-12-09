@@ -593,7 +593,7 @@ MPP_RET test_mpp_enc_cfg_setup(MpiEncMultiCtxInfo *info)
     }
 
     /* setup test mode by env */
-    mpp_env_get_u32("osd_enable", &p->osd_enable, 0);
+    mpp_env_get_u32("osd_enable", &p->osd_enable, 1);
     mpp_env_get_u32("osd_mode", &p->osd_mode, MPP_ENC_OSD_PLT_TYPE_DEFAULT);
     mpp_env_get_u32("roi_enable", &p->roi_enable, 0);
     mpp_env_get_u32("user_data_enable", &p->user_data_enable, 0);
@@ -768,7 +768,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
             if (p->osd_enable) {
                 /* gen and cfg osd plt */
-                mpi_enc_gen_osd_plt(&p->osd_plt, p->frame_count);
+                mpi_enc_gen_osd_plt(&p->osd_plt, 0);
 
                 p->osd_plt_cfg.change = MPP_ENC_OSD_PLT_CFG_CHANGE_ALL;
                 p->osd_plt_cfg.type = MPP_ENC_OSD_PLT_TYPE_USERDEF;
@@ -782,7 +782,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 /* gen and cfg osd plt */
                 mpi_enc_gen_osd_data(&p->osd_data, p->buf_grp, p->width,
-                                     p->height, p->frame_count);
+                                     p->height, 0);
                 mpp_meta_set_ptr(meta, KEY_OSD_DATA, (void*)&p->osd_data);
             }
 

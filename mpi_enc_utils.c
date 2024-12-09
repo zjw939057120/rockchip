@@ -31,6 +31,9 @@
 
 #define MAX_FILE_NAME_LENGTH        256
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 RK_S32 mpi_enc_width_default_stride(RK_S32 width, MppFrameFormat fmt)
 {
     RK_S32 stride = 0;
@@ -1194,4 +1197,18 @@ MPP_RET mpi_enc_test_cmd_show_opt(MpiEncTestArgs* cmd)
 
 void dump_mpp_buffer_to_file(MppBuffer *buffer, FILE *fp) {
     fwrite(mpp_buffer_get_ptr(buffer), 1, mpp_buffer_get_size(buffer), fp);
+}
+
+void RGB_to_YUV(int R, int G, int B, int *Y, int *Cb, int *Cr) {
+    *Y = (int)(16 + 0.257 * R + 0.504 * G + 0.098 * B);
+    *Cb = (int)(128 - 0.148 * R - 0.291 * G + 0.439 * B);
+    *Cr = (int)(128 + 0.439 * R - 0.368 * G - 0.071 * B);
+}
+
+RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A) {
+    uint8_t Y, Cb, Cr;
+    Y = (int) (16 + 0.257 * R + 0.504 * G + 0.098 * B);
+    Cb = (int) (128 - 0.148 * R - 0.291 * G + 0.439 * B);
+    Cr = (int) (128 + 0.439 * R - 0.368 * G - 0.071 * B);
+    return ((A << 24) | (Cr << 16) | (Cb << 8) | Y);
 }

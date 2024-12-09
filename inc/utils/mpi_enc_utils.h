@@ -133,6 +133,8 @@ MPP_RET mpi_enc_test_cmd_put(MpiEncTestArgs* cmd);
 MPP_RET mpi_enc_test_cmd_show_opt(MpiEncTestArgs* cmd);
 
 void dump_mpp_buffer_to_file(MppBuffer *buffer, FILE *fp);
+void RGB_to_YUV(int R, int G, int B, int *Y, int *Cb, int *Cr);
+RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A);
 
 #ifdef __cplusplus
 }
