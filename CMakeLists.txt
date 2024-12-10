@@ -10,7 +10,7 @@ include_directories(inc inc/base inc/osal inc/utils inc/stb inc/freetype)
 link_directories(lib)
 link_libraries(rockchip_mpp mpp_base freetype pthread)
 
-add_executable(main_test main.c)
+add_executable(main_test main.c freetype_test.c)
 target_link_libraries(main_test
         -lm)
 
@@ -38,6 +38,8 @@ add_executable(mpi_enc_test mpi_enc_test.c
         iniparser.c
         dictionary.c
         camera_source.c
+        #freetype
+        freetype_test.c
         )
 target_link_libraries(mpi_enc_test
         -lm)

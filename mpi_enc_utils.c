@@ -28,11 +28,9 @@
 
 #include "mpp_opt.h"
 #include "mpi_enc_utils.h"
+#include "freetype_test.h"
 
 #define MAX_FILE_NAME_LENGTH        256
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
 
 RK_S32 mpi_enc_width_default_stride(RK_S32 width, MppFrameFormat fmt)
 {
@@ -1165,41 +1163,59 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         void *ptr = mpp_buffer_get_ptr(buf);
         region = osd_data->region;
 
-        const char *image_path = "/opt/image.png";//320px*48px
+        FT_Library library;
+        FT_Face face;
+        const char *font_path = "/opt/hei.TTF";  // 替换为合适的字体文件路径
 
-        int img_width, img_height, img_channels;
-        uint8_t *data = stbi_load(image_path, &img_width, &img_height, &img_channels, 0);
-
-        if (data == NULL) {
-            printf("Failed to load image\n");
-            return -1;
+        // 初始化 FreeType 库
+        if (FT_Init_FreeType(&library)) {
+            fprintf(stderr, "Could not initialize FreeType library\n");
+            return 1;
         }
 
-        if (img_channels != 4) {
-            printf("The image doesn't have transparency.%d\n", img_channels);
+        // 加载字体
+        if (FT_New_Face(library, font_path, 0, &face)) {
+            fprintf(stderr, "Could not open font file %s\n", font_path);
+            return 1;
         }
+
+        // 设置字体大小
+        if (FT_Set_Pixel_Sizes(face, 0, 28)) {
+            fprintf(stderr, "Could not set font size\n");
+            return 1;
+        }
+
+        // 创建灰度图像
+        GrayscaleImage *image = create_image(320, 48);
+        clear_image(image);
+
+        // 渲染汉字 "我爱中国"
+        const wchar_t *text = L"我爱中国";
+        render_glyph_to_image(face, text, image);
 
         uint32_t gray_len = 20 * 3 * 256;
         uint8_t gray[gray_len];
         memset(gray, 5, gray_len);//MPP_ENC_OSD_PLT_TRANS
 
         int gray_index = 0;
-        for (int i = 0; i < img_height; i++) {
-            for (int j = 0; j < img_width; j++) {
-                int index = (i * img_width + j) * img_channels;
-                uint8_t r = data[index];
-                uint8_t g = data[index + 1];
-                uint8_t b = data[index + 2];
-                gray[gray_index] = rgb_to_gray(r, g, b) >= 128 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
-                printf("%s", gray[gray_index] != 5 ? "@" : " ");
+        for (int y = 0; y < image->height; ++y) {
+            for (int x = 0; x < image->width; ++x) {
+                // 计算该像素在数据中的位置
+                gray[gray_index] = image->data[y * image->pitch + x] == 255 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
+                // 打印像素值
+                //printf("Pixel at (%d, %d): %d\n", x, y, gray[gray_index]);
+                printf("%s", image->data[y * image->pitch + x] != 255 ? "@" : " ");
                 if (gray_index % 320 == 0) {
                     printf("\n");
                 }
                 gray_index++;
             }
         }
-        printf("\n\n");
-        stbi_image_free(data);
+
+        // 清理
+        FT_Done_Face(face);
+        FT_Done_FreeType(library);
+        free_image(image);
 
         for (k = 0; k < num_region; k++, region++) {
             mb_w = region->num_mb_x;
