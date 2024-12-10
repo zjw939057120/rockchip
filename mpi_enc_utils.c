@@ -1108,7 +1108,7 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
                              RK_U32 width, RK_U32 height, RK_U32 frame_cnt, FILE *fp_output) {
     MppEncOSDRegion *region = NULL;
     RK_U32 k = 0;
-    RK_U32 num_region = 3;
+    RK_U32 num_region = 1;
     RK_U32 buf_offset = 0;
     RK_U32 buf_size = 0;
     RK_U32 mb_w_max = MPP_ALIGN(width, 8) / 8;
@@ -1181,7 +1181,7 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
 
         uint32_t gray_len = 20 * 3 * 256;
         uint8_t gray[gray_len];
-        memset(gray, 0, gray_len);
+        memset(gray, 5, gray_len);//MPP_ENC_OSD_PLT_TRANS
 
         int gray_index = 0;
         for (int i = 0; i < img_height; i++) {
@@ -1190,9 +1190,8 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
                 uint8_t r = data[index];
                 uint8_t g = data[index + 1];
                 uint8_t b = data[index + 2];
-                uint8_t a = data[index + 3];
-                gray[gray_index] = rgb_to_gray(r, g, b) > 128 ? 7 : 6;
-                printf("%s", gray[gray_index] == 7 ? "@" : " ");
+                gray[gray_index] = rgb_to_gray(r, g, b) >= 128 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
+                printf("%s", gray[gray_index] != 5 ? "@" : " ");
                 if (gray_index % 320 == 0) {
                     printf("\n");
                 }

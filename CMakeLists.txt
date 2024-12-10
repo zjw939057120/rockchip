@@ -6,11 +6,13 @@ project(mpp_test_1.0.7)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 
-include_directories(inc inc/base inc/osal inc/utils inc/librga)
+include_directories(inc inc/base inc/osal inc/utils inc/stb inc/freetype)
 link_directories(lib)
-link_libraries(rockchip_mpp mpp_base rga pthread)
+link_libraries(rockchip_mpp mpp_base freetype pthread)
 
-#add_executable(mpp_test main.cpp)
+add_executable(main_test main.c)
+target_link_libraries(main_test
+        -lm)
 
 # mpp info test
 #add_executable(mpp_inf_testo mpp_info_test.c)
@@ -58,9 +60,3 @@ target_link_libraries(mpi_enc_test
 
 # new dec multi unit test
 #add_executable(mpi_dec_multi_test mpi_dec_multi_test.c)
-
-# rga_alpha_yuv_demo
-add_executable(rga_alpha_yuv_demo
-        rga_alpha_yuv_demo.cpp
-        librga_utils.cpp
-        )
