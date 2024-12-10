@@ -136,6 +136,8 @@ void dump_mpp_buffer_to_file(MppBuffer *buffer, FILE *fp);
 void RGB_to_YUV(int R, int G, int B, int *Y, int *Cb, int *Cr);
 RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A);
 
+uint8_t rgb_to_gray(uint8_t r, uint8_t g, uint8_t b);
+
 #ifdef __cplusplus
 }
 #endif

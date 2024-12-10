@@ -1105,14 +1105,13 @@ MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt, FILE *fp_ou
 }
 
 MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
-                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt, FILE *fp_output)
-{
+                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt, FILE *fp_output) {
     MppEncOSDRegion *region = NULL;
     RK_U32 k = 0;
-    RK_U32 num_region = 8;
+    RK_U32 num_region = 3;
     RK_U32 buf_offset = 0;
     RK_U32 buf_size = 0;
-    RK_U32 mb_w_max = MPP_ALIGN(width, 16) / 16;
+    RK_U32 mb_w_max = MPP_ALIGN(width, 8) / 8;
     RK_U32 mb_h_max = MPP_ALIGN(height, 16) / 16;
     RK_U32 step_x = MPP_ALIGN(mb_w_max, 8) / 8;
     RK_U32 step_y = MPP_ALIGN(mb_h_max, 16) / 16;
@@ -1166,20 +1165,55 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         void *ptr = mpp_buffer_get_ptr(buf);
         region = osd_data->region;
 
+        const char *image_path = "/opt/image.png";//320px*48px
+
+        int img_width, img_height, img_channels;
+        uint8_t *data = stbi_load(image_path, &img_width, &img_height, &img_channels, 0);
+
+        if (data == NULL) {
+            printf("Failed to load image\n");
+            return -1;
+        }
+
+        if (img_channels != 4) {
+            printf("The image doesn't have transparency.%d\n", img_channels);
+        }
+
+        uint32_t gray_len = 20 * 3 * 256;
+        uint8_t gray[gray_len];
+        memset(gray, 0, gray_len);
+
+        int gray_index = 0;
+        for (int i = 0; i < img_height; i++) {
+            for (int j = 0; j < img_width; j++) {
+                int index = (i * img_width + j) * img_channels;
+                uint8_t r = data[index];
+                uint8_t g = data[index + 1];
+                uint8_t b = data[index + 2];
+                uint8_t a = data[index + 3];
+                gray[gray_index] = rgb_to_gray(r, g, b) > 128 ? 7 : 6;
+                printf("%s", gray[gray_index] == 7 ? "@" : " ");
+                if (gray_index % 320 == 0) {
+                    printf("\n");
+                }
+                gray_index++;
+            }
+        }
+        printf("\n\n");
+        stbi_image_free(data);
+
         for (k = 0; k < num_region; k++, region++) {
             mb_w = region->num_mb_x;
             mb_h = region->num_mb_y;
             buf_offset = region->buf_offset;
 
-                for (int i = 0; i < mb_w * mb_h * 256 ; ++i) {
-                memset(ptr + buf_offset+i, i % 8, 1);
-            }
+            memcpy(ptr + buf_offset, gray, mb_w * mb_h * 256);
+
         }
-        dump_mpp_buffer_to_file(buf,fp_output);
+        dump_mpp_buffer_to_file(buf, fp_output);
     }
 
     osd_data->buf = buf;
-
     return MPP_OK;
 }
 
@@ -1203,9 +1237,9 @@ void dump_mpp_buffer_to_file(MppBuffer *buffer, FILE *fp) {
 }
 
 void RGB_to_YUV(int R, int G, int B, int *Y, int *Cb, int *Cr) {
-    *Y = (int)(16 + 0.257 * R + 0.504 * G + 0.098 * B);
-    *Cb = (int)(128 - 0.148 * R - 0.291 * G + 0.439 * B);
-    *Cr = (int)(128 + 0.439 * R - 0.368 * G - 0.071 * B);
+    *Y = (int) (16 + 0.257 * R + 0.504 * G + 0.098 * B);
+    *Cb = (int) (128 - 0.148 * R - 0.291 * G + 0.439 * B);
+    *Cr = (int) (128 + 0.439 * R - 0.368 * G - 0.071 * B);
 }
 
 RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A) {
@@ -1214,4 +1248,8 @@ RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A) {
     Cb = (int) (128 - 0.148 * R - 0.291 * G + 0.439 * B);
     Cr = (int) (128 + 0.439 * R - 0.368 * G - 0.071 * B);
     return ((A << 24) | (Cr << 16) | (Cb << 8) | Y);
+}
+
+uint8_t rgb_to_gray(uint8_t r, uint8_t g, uint8_t b) {
+    return (uint8_t) (0.299 * r + 0.587 * g + 0.114 * b);
 }
