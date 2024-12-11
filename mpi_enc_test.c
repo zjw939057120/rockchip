@@ -1187,7 +1187,7 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].width = 1280;
         mpiEncTestArgs[i].height = 720;
         mpiEncTestArgs[i].bps_target = 2048 * 1024;
-        mpiEncTestArgs[i].font_path = "/opt/font_cn.ttf";
+        mpiEncTestArgs[i].font_path = "./font_cn.ttf";
         if (!enable[i])continue;
 
         pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
