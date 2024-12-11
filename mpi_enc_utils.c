@@ -1075,7 +1075,10 @@ MPP_RET mpi_enc_gen_smart_gop_ref_cfg(MppEncRefCfg ref, RK_S32 gop_len, RK_S32 v
     return ret;
 }
 
-MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt, FILE *fp_output)
+FT_Library ft_library;
+FT_Face ft_face;
+GrayscaleImage *ft_image;
+MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt)
 {
     /*
      * osd idx size range from 16x16 bytes(pixels) to hor_stride*ver_stride(bytes).
@@ -1099,11 +1102,32 @@ MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt, FILE *fp_ou
         for (k = 0; k < 256; k++)
             osd_plt->data[k].val = plt_table[(base + k) % 8];
     }
+
+    const char *font_path = "/opt/font_cn.ttf";  // 替换为合适的字体文件路径
+
+    // 初始化 FreeType 库
+    if (FT_Init_FreeType(&ft_library)) {
+        fprintf(stderr, "Could not initialize FreeType library\n");
+        return 1;
+    }
+
+    // 加载字体
+    if (FT_New_Face(ft_library, font_path, 0, &ft_face)) {
+        fprintf(stderr, "Could not open font file %s\n", font_path);
+        return 1;
+    }
+
+    // 设置字体大小
+    if (FT_Set_Pixel_Sizes(ft_face, 0, 28)) {
+        fprintf(stderr, "Could not set font size\n");
+        return 1;
+    }
     return MPP_OK;
 }
 
+
 MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
-                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt, FILE *fp_output) {
+                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt) {
     MppEncOSDRegion *region = NULL;
     RK_U32 k = 0;
     RK_U32 num_region = 1;
@@ -1163,59 +1187,38 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         void *ptr = mpp_buffer_get_ptr(buf);
         region = osd_data->region;
 
-        FT_Library library;
-        FT_Face face;
-        const char *font_path = "/opt/hei.TTF";  // 替换为合适的字体文件路径
-
-        // 初始化 FreeType 库
-        if (FT_Init_FreeType(&library)) {
-            fprintf(stderr, "Could not initialize FreeType library\n");
-            return 1;
-        }
-
-        // 加载字体
-        if (FT_New_Face(library, font_path, 0, &face)) {
-            fprintf(stderr, "Could not open font file %s\n", font_path);
-            return 1;
-        }
-
-        // 设置字体大小
-        if (FT_Set_Pixel_Sizes(face, 0, 28)) {
-            fprintf(stderr, "Could not set font size\n");
-            return 1;
-        }
-
         // 创建灰度图像
-        GrayscaleImage *image = create_image(320, 48);
-        clear_image(image);
+        ft_image = create_image(320, 48);
+        clear_image(ft_image);
 
         // 渲染汉字 "我爱中国"
         const wchar_t *text = L"我爱中国";
-        render_glyph_to_image(face, text, image);
+        render_glyph_to_image(ft_face, text, ft_image);
 
         uint32_t gray_len = 20 * 3 * 256;
         uint8_t gray[gray_len];
         memset(gray, 5, gray_len);//MPP_ENC_OSD_PLT_TRANS
 
         int gray_index = 0;
-        for (int y = 0; y < image->height; ++y) {
-            for (int x = 0; x < image->width; ++x) {
+        for (int y = 0; y < ft_image->height; ++y) {
+            for (int x = 0; x < ft_image->width; ++x) {
                 // 计算该像素在数据中的位置
-                gray[gray_index] = image->data[y * image->pitch + x] == 255 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
+                gray[gray_index] = ft_image->data[y * ft_image->pitch + x] == 255 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
                 // 打印像素值
-                //printf("Pixel at (%d, %d): %d\n", x, y, gray[gray_index]);
-                printf("%s", image->data[y * image->pitch + x] != 255 ? "@" : " ");
+                /*
+                printf("Pixel at (%d, %d): %d\n", x, y, gray[gray_index]);
+                printf("%s", ft_image->data[y * ft_image->pitch + x] != 255 ? "@" : " ");
                 if (gray_index % 320 == 0) {
                     printf("\n");
-                }
+                }*/
                 gray_index++;
             }
         }
 
         // 清理
-        FT_Done_Face(face);
-        FT_Done_FreeType(library);
-        free_image(image);
+//        FT_Done_Face(ft_face);
+//        FT_Done_FreeType(ft_library);
+        free_image(ft_image);
 
         for (k = 0; k < num_region; k++, region++) {
             mb_w = region->num_mb_x;
@@ -1225,7 +1228,6 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
             memcpy(ptr + buf_offset, gray, mb_w * mb_h * 256);
 
         }
-        dump_mpp_buffer_to_file(buf, fp_output);
     }
 
     osd_data->buf = buf;

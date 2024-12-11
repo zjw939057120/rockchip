@@ -15,6 +15,7 @@
  */
 
 #include <signal.h>
+#include <freetype.h>
 #include "mpi_enc_test.h"
 
 typedef struct {
@@ -598,6 +599,21 @@ MPP_RET test_mpp_enc_cfg_setup(MpiEncMultiCtxInfo *info)
     mpp_env_get_u32("roi_enable", &p->roi_enable, 0);
     mpp_env_get_u32("user_data_enable", &p->user_data_enable, 0);
 
+    if (p->osd_enable) {
+        /* gen and cfg osd plt */
+        mpi_enc_gen_osd_plt(&p->osd_plt, 0);
+
+        p->osd_plt_cfg.change = MPP_ENC_OSD_PLT_CFG_CHANGE_ALL;
+        p->osd_plt_cfg.type = MPP_ENC_OSD_PLT_TYPE_USERDEF;
+        p->osd_plt_cfg.plt = &p->osd_plt;
+
+        ret = mpi->control(ctx, MPP_ENC_SET_OSD_PLT_CFG, &p->osd_plt_cfg);
+        if (ret) {
+            mpp_err("mpi control enc set osd plt failed ret %d\n", ret);
+            goto RET;
+        }
+    }
+
     if (p->roi_enable) {
         mpp_enc_roi_init(&p->roi_ctx, p->width, p->height, p->type, 4);
         mpp_assert(p->roi_ctx);
@@ -768,21 +784,8 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
             if (p->osd_enable) {
                 /* gen and cfg osd plt */
-                mpi_enc_gen_osd_plt(&p->osd_plt, 0, p->fp_output_yuv);
-
-                p->osd_plt_cfg.change = MPP_ENC_OSD_PLT_CFG_CHANGE_ALL;
-                p->osd_plt_cfg.type = MPP_ENC_OSD_PLT_TYPE_USERDEF;
-                p->osd_plt_cfg.plt = &p->osd_plt;
-
-                ret = mpi->control(ctx, MPP_ENC_SET_OSD_PLT_CFG, &p->osd_plt_cfg);
-                if (ret) {
-                    mpp_err("mpi control enc set osd plt failed ret %d\n", ret);
-                    goto RET;
-                }
-
-                /* gen and cfg osd plt */
                 mpi_enc_gen_osd_data(&p->osd_data, p->buf_grp, p->width,
-                                     p->height, 0, p->fp_output_yuv);
+                                     p->height, 0);
                 mpp_meta_set_ptr(meta, KEY_OSD_DATA, (void*)&p->osd_data);
             }
 
@@ -1176,7 +1179,7 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
         mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
         mpiEncTestArgs[i].format = MPP_FMT_YUV420SP;
-        mpiEncTestArgs[i].frame_num = 100;
+        mpiEncTestArgs[i].frame_num = 1000;
         mpiEncTestArgs[i].nthreads = 1;
         mpiEncTestArgs[i].width = 1280;
         mpiEncTestArgs[i].height = 720;
