@@ -108,6 +108,7 @@ typedef struct MpiEncTestArgs_t {
     uint8_t chn_id;
     const char *file_output_yuv;
     pthread_t thread_id;
+    const char *font_path;
     FT_Library ft_library;
     FT_Face ft_face;
     GrayscaleImage *ft_image;
@@ -142,6 +143,7 @@ void RGB_to_YUV(int R, int G, int B, int *Y, int *Cb, int *Cr);
 RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A);
 
 uint8_t rgb_to_gray(uint8_t r, uint8_t g, uint8_t b);
+
 uint8_t freetype_init(MpiEncTestArgs *cmd);
 
 #ifdef __cplusplus

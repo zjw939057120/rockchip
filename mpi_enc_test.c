@@ -215,7 +215,7 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
         }
     }
 
-#ifdef  _FILE_OUTPUT_
+#ifdef  _FILE_OUTPUT_H264_
     if (cmd->file_output) {
         p->fp_output = fopen(cmd->file_output, "w+b");
         if (NULL == p->fp_output) {
@@ -599,6 +599,7 @@ MPP_RET test_mpp_enc_cfg_setup(MpiEncMultiCtxInfo *info)
     mpp_env_get_u32("roi_enable", &p->roi_enable, 0);
     mpp_env_get_u32("user_data_enable", &p->user_data_enable, 0);
 
+#ifdef _FILE_OUTPUT_OSD_
     if (p->osd_enable) {
         /* gen and cfg osd plt */
         mpi_enc_gen_osd_plt(&p->osd_plt, 0);
@@ -613,6 +614,7 @@ MPP_RET test_mpp_enc_cfg_setup(MpiEncMultiCtxInfo *info)
             goto RET;
         }
     }
+#endif
 
     if (p->roi_enable) {
         mpp_enc_roi_init(&p->roi_ctx, p->width, p->height, p->type, 4);
@@ -660,7 +662,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
             void *ptr   = mpp_packet_get_pos(packet);
             size_t len  = mpp_packet_get_length(packet);
 
-#ifdef _FILE_OUTPUT_
+#ifdef _FILE_OUTPUT_H264_
             if (p->fp_output)
                 fwrite(ptr, 1, len, p->fp_output);
 #endif
@@ -782,13 +784,14 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 mpp_meta_set_ptr(meta, KEY_USER_DATAS, &data_group);
             }
 
+#ifdef _FILE_OUTPUT_OSD_
             if (p->osd_enable) {
                 /* gen and cfg osd plt */
                 mpi_enc_gen_osd_data(&p->osd_data, p->buf_grp, p->width,
                                      p->height, 0, cmd);
                 mpp_meta_set_ptr(meta, KEY_OSD_DATA, (void*)&p->osd_data);
             }
-
+#endif
             if (p->roi_enable) {
                 RoiRegionCfg *region = &p->roi_region;
 
@@ -858,7 +861,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 p->pkt_eos = mpp_packet_get_eos(packet);
 
-#ifdef _FILE_OUTPUT_
+#ifdef _FILE_OUTPUT_H264_
                 if (p->fp_output)
                     fwrite(ptr, 1, len, p->fp_output);
 #endif
@@ -1179,14 +1182,12 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
         mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
         mpiEncTestArgs[i].format = MPP_FMT_YUV420SP;
-        mpiEncTestArgs[i].frame_num = 1000;
+        mpiEncTestArgs[i].frame_num = 2000;
         mpiEncTestArgs[i].nthreads = 1;
         mpiEncTestArgs[i].width = 1280;
         mpiEncTestArgs[i].height = 720;
         mpiEncTestArgs[i].bps_target = 2048 * 1024;
-    }
-
-    for (int i = 0; i < 4; ++i) {
+        mpiEncTestArgs[i].font_path = "/opt/font_cn.ttf";
         if (!enable[i])continue;
 
         pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
@@ -1199,7 +1200,9 @@ void *startHisiCapture(void *arg)
 }
 
 void enc_test_multi_ex(MpiEncTestArgs *cmd) {
+#ifdef _FILE_OUTPUT_OSD_
     freetype_init(cmd);
+#endif
 
     mpi_enc_test_cmd_show_opt(cmd);
 

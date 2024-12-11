@@ -837,6 +837,9 @@ MPP_RET mpi_enc_test_cmd_put(MpiEncTestArgs* cmd)
     MPP_FREE(cmd->file_cfg);
     MPP_FREE(cmd->file_slt);
     //MPP_FREE(cmd);
+    FT_Done_Face(cmd->ft_face);
+    FT_Done_FreeType(cmd->ft_library);
+    free_image(cmd->ft_image);
 
     return MPP_OK;
 }
@@ -1165,8 +1168,6 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         void *ptr = mpp_buffer_get_ptr(buf);
         region = osd_data->region;
 
-        // 创建灰度图像
-        cmd->ft_image = create_image(320, 48);
         clear_image(cmd->ft_image);
 
         // 渲染汉字 "我爱中国"
@@ -1194,9 +1195,10 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         }
 
         // 清理
-//        FT_Done_Face(cmd->ft_face);
-//        FT_Done_FreeType(cmd->ft_library);
-        free_image(cmd->ft_image);
+        /*
+        FT_Done_Face(cmd->ft_face);
+        FT_Done_FreeType(cmd->ft_library);
+        free_image(cmd->ft_image);*/
 
         for (k = 0; k < num_region; k++, region++) {
             mb_w = region->num_mb_x;
@@ -1250,8 +1252,6 @@ uint8_t rgb_to_gray(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 uint8_t freetype_init(MpiEncTestArgs *cmd){
-    const char *font_path = "/opt/font_cn.ttf";  // 替换为合适的字体文件路径
-
     // 初始化 FreeType 库
     if (FT_Init_FreeType(&cmd->ft_library)) {
         fprintf(stderr, "Could not initialize FreeType library\n");
@@ -1259,8 +1259,8 @@ uint8_t freetype_init(MpiEncTestArgs *cmd){
     }
 
     // 加载字体
-    if (FT_New_Face(cmd->ft_library, font_path, 0, &cmd->ft_face)) {
-        fprintf(stderr, "Could not open font file %s\n", font_path);
+    if (FT_New_Face(cmd->ft_library, cmd->font_path, 0, &cmd->ft_face)) {
+        fprintf(stderr, "Could not open font file %s\n", cmd->font_path);
         return 1;
     }
 
@@ -1269,4 +1269,6 @@ uint8_t freetype_init(MpiEncTestArgs *cmd){
         fprintf(stderr, "Could not set font size\n");
         return 1;
     }
+    // 创建灰度图像
+    cmd->ft_image = create_image(320, 48);
 }

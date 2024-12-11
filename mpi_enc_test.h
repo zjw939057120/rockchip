@@ -31,7 +31,8 @@ void enc_test_multi_ex(MpiEncTestArgs* cmd);
 void mpp_packet_send(uint8_t chn_id, void *pVoid, int i, size_t len);
 
 #define _OUTPUT_CHANNEL_MAX_ 4
-#define _FILE_OUTPUT_
+#define _FILE_OUTPUT_H264_
+#define _FILE_OUTPUT_OSD_
 #define _FILE_OUTPUT_YUV_
 #define _FILE_OUTPUT_TEST_
 MpiEncTestArgs mpiEncTestArgs[_OUTPUT_CHANNEL_MAX_];
