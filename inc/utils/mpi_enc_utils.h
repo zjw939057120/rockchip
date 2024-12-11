@@ -18,9 +18,11 @@
 #define __MPI_ENC_UTILS_H__
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "rk_venc_cmd.h"
 #include "iniparser.h"
+#include "../../freetype_test.h"
 
 typedef struct MpiEncTestArgs_t {
     char                *file_input;
@@ -106,6 +108,9 @@ typedef struct MpiEncTestArgs_t {
     uint8_t chn_id;
     const char *file_output_yuv;
     pthread_t thread_id;
+    FT_Library ft_library;
+    FT_Face ft_face;
+    GrayscaleImage *ft_image;
 } MpiEncTestArgs;
 
 #ifdef __cplusplus
@@ -123,7 +128,7 @@ RK_S32 mpi_enc_width_default_stride(RK_S32 width, MppFrameFormat fmt);
 MPP_RET mpi_enc_gen_ref_cfg(MppEncRefCfg ref, RK_S32 gop_mode);
 MPP_RET mpi_enc_gen_smart_gop_ref_cfg(MppEncRefCfg ref, RK_S32 gop_len, RK_S32 vi_len);
 MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
-                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt);
+                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt,MpiEncTestArgs *cmd);
 MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt);
 
 MpiEncTestArgs *mpi_enc_test_cmd_get(void);
@@ -137,6 +142,7 @@ void RGB_to_YUV(int R, int G, int B, int *Y, int *Cb, int *Cr);
 RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A);
 
 uint8_t rgb_to_gray(uint8_t r, uint8_t g, uint8_t b);
+uint8_t freetype_init(MpiEncTestArgs *cmd);
 
 #ifdef __cplusplus
 }

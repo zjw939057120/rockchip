@@ -785,7 +785,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
             if (p->osd_enable) {
                 /* gen and cfg osd plt */
                 mpi_enc_gen_osd_data(&p->osd_data, p->buf_grp, p->width,
-                                     p->height, 0);
+                                     p->height, 0, cmd);
                 mpp_meta_set_ptr(meta, KEY_OSD_DATA, (void*)&p->osd_data);
             }
 
@@ -1164,12 +1164,12 @@ int main(int argc, char **argv)
 void *startHisiCapture(void *arg)
 #endif
 {
-    uint8_t i;
-    char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/video33", "/dev/video44"};
+    bool enable[4] = {true,true,true,true};
+    char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/vide33", "/dev/video44"};
     char *file_output[4] = {"/opt/output_0.h264", "/opt/output_1.h264", "/opt/output_2.h264", "/opt/output_3.h264"};
     char *file_output_yuv[4] = {"/opt/output_0.yuv", "/opt/output_1.yuv", "/opt/output_2.yuv", "/opt/output_3.yuv"};
-    for (int j = 0; j < 1; ++j) {
-        i = 0;
+
+    for (int i = 0; i < 4; ++i) {
         mpiEncTestArgs[i].chn_id = i;
         mpiEncTestArgs[i].file_input = file_input[i];
         mpiEncTestArgs[i].file_output = file_output[i];
@@ -1184,6 +1184,10 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].width = 1280;
         mpiEncTestArgs[i].height = 720;
         mpiEncTestArgs[i].bps_target = 2048 * 1024;
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        if (!enable[i])continue;
 
         pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
     }
@@ -1195,6 +1199,8 @@ void *startHisiCapture(void *arg)
 }
 
 void enc_test_multi_ex(MpiEncTestArgs *cmd) {
+    freetype_init(cmd);
+
     mpi_enc_test_cmd_show_opt(cmd);
 
     enc_test_multi(cmd, cmd->file_input);

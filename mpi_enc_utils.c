@@ -1075,9 +1075,6 @@ MPP_RET mpi_enc_gen_smart_gop_ref_cfg(MppEncRefCfg ref, RK_S32 gop_len, RK_S32 v
     return ret;
 }
 
-FT_Library ft_library;
-FT_Face ft_face;
-GrayscaleImage *ft_image;
 MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt)
 {
     /*
@@ -1103,31 +1100,12 @@ MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt)
             osd_plt->data[k].val = plt_table[(base + k) % 8];
     }
 
-    const char *font_path = "/opt/font_cn.ttf";  // 替换为合适的字体文件路径
-
-    // 初始化 FreeType 库
-    if (FT_Init_FreeType(&ft_library)) {
-        fprintf(stderr, "Could not initialize FreeType library\n");
-        return 1;
-    }
-
-    // 加载字体
-    if (FT_New_Face(ft_library, font_path, 0, &ft_face)) {
-        fprintf(stderr, "Could not open font file %s\n", font_path);
-        return 1;
-    }
-
-    // 设置字体大小
-    if (FT_Set_Pixel_Sizes(ft_face, 0, 28)) {
-        fprintf(stderr, "Could not set font size\n");
-        return 1;
-    }
     return MPP_OK;
 }
 
 
 MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
-                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt) {
+                             RK_U32 width, RK_U32 height, RK_U32 frame_cnt,MpiEncTestArgs *cmd) {
     MppEncOSDRegion *region = NULL;
     RK_U32 k = 0;
     RK_U32 num_region = 1;
@@ -1188,22 +1166,22 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         region = osd_data->region;
 
         // 创建灰度图像
-        ft_image = create_image(320, 48);
-        clear_image(ft_image);
+        cmd->ft_image = create_image(320, 48);
+        clear_image(cmd->ft_image);
 
         // 渲染汉字 "我爱中国"
         const wchar_t *text = L"我爱中国";
-        render_glyph_to_image(ft_face, text, ft_image);
+        render_glyph_to_image(cmd->ft_face, text, cmd->ft_image);
 
         uint32_t gray_len = 20 * 3 * 256;
         uint8_t gray[gray_len];
         memset(gray, 5, gray_len);//MPP_ENC_OSD_PLT_TRANS
 
         int gray_index = 0;
-        for (int y = 0; y < ft_image->height; ++y) {
-            for (int x = 0; x < ft_image->width; ++x) {
+        for (int y = 0; y < cmd->ft_image->height; ++y) {
+            for (int x = 0; x < cmd->ft_image->width; ++x) {
                 // 计算该像素在数据中的位置
-                gray[gray_index] = ft_image->data[y * ft_image->pitch + x] == 255 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
+                gray[gray_index] = cmd->ft_image->data[y * cmd->ft_image->pitch + x] == 255 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
                 // 打印像素值
                 /*
                 printf("Pixel at (%d, %d): %d\n", x, y, gray[gray_index]);
@@ -1216,9 +1194,9 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         }
 
         // 清理
-//        FT_Done_Face(ft_face);
-//        FT_Done_FreeType(ft_library);
-        free_image(ft_image);
+//        FT_Done_Face(cmd->ft_face);
+//        FT_Done_FreeType(cmd->ft_library);
+        free_image(cmd->ft_image);
 
         for (k = 0; k < num_region; k++, region++) {
             mb_w = region->num_mb_x;
@@ -1269,4 +1247,26 @@ RK_U32 RGBA_to_Palette(uint8_t R, uint8_t G, uint8_t B, uint8_t A) {
 
 uint8_t rgb_to_gray(uint8_t r, uint8_t g, uint8_t b) {
     return (uint8_t) (0.299 * r + 0.587 * g + 0.114 * b);
+}
+
+uint8_t freetype_init(MpiEncTestArgs *cmd){
+    const char *font_path = "/opt/font_cn.ttf";  // 替换为合适的字体文件路径
+
+    // 初始化 FreeType 库
+    if (FT_Init_FreeType(&cmd->ft_library)) {
+        fprintf(stderr, "Could not initialize FreeType library\n");
+        return 1;
+    }
+
+    // 加载字体
+    if (FT_New_Face(cmd->ft_library, font_path, 0, &cmd->ft_face)) {
+        fprintf(stderr, "Could not open font file %s\n", font_path);
+        return 1;
+    }
+
+    // 设置字体大小
+    if (FT_Set_Pixel_Sizes(cmd->ft_face, 0, 28)) {
+        fprintf(stderr, "Could not set font size\n");
+        return 1;
+    }
 }
