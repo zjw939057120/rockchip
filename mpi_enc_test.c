@@ -16,6 +16,7 @@
 
 #include <signal.h>
 #include <freetype.h>
+#include <locale.h>
 #include "mpi_enc_test.h"
 
 typedef struct {
@@ -594,7 +595,8 @@ MPP_RET test_mpp_enc_cfg_setup(MpiEncMultiCtxInfo *info)
     }
 
     /* setup test mode by env */
-    mpp_env_get_u32("osd_enable", &p->osd_enable, 1);
+    p->osd_enable = cmd->osd_enable;
+    //mpp_env_get_u32("osd_enable", &p->osd_enable, 1);
     mpp_env_get_u32("osd_mode", &p->osd_mode, MPP_ENC_OSD_PLT_TYPE_DEFAULT);
     mpp_env_get_u32("roi_enable", &p->roi_enable, 0);
     mpp_env_get_u32("user_data_enable", &p->user_data_enable, 0);
@@ -1167,6 +1169,8 @@ int main(int argc, char **argv)
 void *startHisiCapture(void *arg)
 #endif
 {
+    setlocale(LC_ALL, "zh_CN.utf8");
+
     bool enable[4] = {true,true,true,true};
     char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/vide33", "/dev/video44"};
     char *file_output[4] = {"/opt/output_0.h264", "/opt/output_1.h264", "/opt/output_2.h264", "/opt/output_3.h264"};
@@ -1182,12 +1186,18 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
         mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
         mpiEncTestArgs[i].format = MPP_FMT_YUV420SP;
-        mpiEncTestArgs[i].frame_num = 2000;
+        mpiEncTestArgs[i].frame_num = 200;
         mpiEncTestArgs[i].nthreads = 1;
         mpiEncTestArgs[i].width = 1280;
         mpiEncTestArgs[i].height = 720;
         mpiEncTestArgs[i].bps_target = 2048 * 1024;
         mpiEncTestArgs[i].font_path = "/opt/font_cn.ttf";
+        mpiEncTestArgs[i].osd_enable = true;
+        mpiEncTestArgs[i].osd_type = 2;//0 实时时间,1 文本,2 滚动文本,3 图片
+        const char *szSour = "我爱中国";
+        wchar_t *text[128] = {0};
+        mbstowcs(text,szSour,strlen(szSour));
+        mpiEncTestArgs[i].osd_text = text;
         if (!enable[i])continue;
 
         pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
