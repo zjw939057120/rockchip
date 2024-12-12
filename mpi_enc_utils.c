@@ -1171,7 +1171,9 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         clear_image(cmd->ft_image);
 
         // 渲染汉字 "我爱中国"
-        const wchar_t *text = L"我爱中国";
+        const char *szSour = "我爱中国";
+        wchar_t *text[128] = {0};
+        mbstowcs(text,szSour,strlen(szSour));
         render_glyph_to_image(cmd->ft_face, text, cmd->ft_image);
 
         uint32_t gray_len = 20 * 3 * 256;

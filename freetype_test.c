@@ -1,6 +1,8 @@
+#include <locale.h>
 #include "freetype_test.h"
 
 GrayscaleImage *create_image(int width, int height) {
+    setlocale(LC_ALL, "zh_CN.utf8");
     GrayscaleImage *image = (GrayscaleImage *) malloc(sizeof(GrayscaleImage));
     image->width = width;
     image->height = height;
