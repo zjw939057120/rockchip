@@ -17,6 +17,7 @@
 #define MODULE_TAG "mpi_enc_utils"
 
 #include <string.h>
+#include <time.h>
 
 #include "mpp_mem.h"
 #include "mpp_debug.h"
@@ -1085,14 +1086,15 @@ MPP_RET mpi_enc_gen_osd_plt(MppEncOSDPlt *osd_plt, RK_U32 frame_cnt)
      * for general use, 1/8 Y buffer is enough.
      */
     static RK_U32 plt_table[8] = {
+        MPP_ENC_OSD_PLT_TRANS,
+        MPP_ENC_OSD_PLT_BLACK,
+        MPP_ENC_OSD_PLT_WHITE,
         MPP_ENC_OSD_PLT_RED,
         MPP_ENC_OSD_PLT_YELLOW,
         MPP_ENC_OSD_PLT_BLUE,
         MPP_ENC_OSD_PLT_GREEN,
         MPP_ENC_OSD_PLT_CYAN,
-        MPP_ENC_OSD_PLT_TRANS,
-        MPP_ENC_OSD_PLT_BLACK,
-        MPP_ENC_OSD_PLT_WHITE,
+
     };
 
     if (osd_plt) {
@@ -1114,7 +1116,7 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
     RK_U32 num_region = 1;
     RK_U32 buf_offset = 0;
     RK_U32 buf_size = 0;
-    RK_U32 mb_w_max = MPP_ALIGN(width, 8) / 8;
+    RK_U32 mb_w_max = 240;
     RK_U32 mb_h_max = MPP_ALIGN(height, 16) / 16;
     RK_U32 step_x = MPP_ALIGN(mb_w_max, 8) / 8;
     RK_U32 step_y = MPP_ALIGN(mb_h_max, 16) / 16;
@@ -1148,10 +1150,10 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
 
         mb_x += step_x;
         mb_y += step_y;
-        if (mb_x >= mb_w_max)
+        /*if (mb_x >= mb_w_max)
             mb_x -= mb_w_max;
         if (mb_y >= mb_h_max)
-            mb_y -= mb_h_max;
+            mb_y -= mb_h_max;*/
     }
 
     /* create buffer and write osd index data */
@@ -1169,6 +1171,21 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         region = osd_data->region;
 
         clear_image(cmd->ft_image);
+        switch (cmd->osd_type) {
+            case 0://time
+            {
+                char time_buf[100];
+                time_t t = time(NULL);
+                struct tm tm = *localtime(&t);
+                strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm);
+                sprintf(cmd->osd_text, "通道 %d %s", cmd->chn_id, time_buf);
+            }
+                break;
+            case 1://text
+            {
+            }
+                break;
+        }
 
         render_glyph_to_image(cmd->ft_face, cmd->osd_text, cmd->ft_image);
 
@@ -1180,7 +1197,7 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         for (int y = 0; y < cmd->ft_image->height; ++y) {
             for (int x = 0; x < cmd->ft_image->width; ++x) {
                 // 计算该像素在数据中的位置
-                gray[gray_index] = cmd->ft_image->data[y * cmd->ft_image->pitch + x] == 255 ? 5 : 7;//MPP_ENC_OSD_PLT_WHITE
+                gray[gray_index] = cmd->ft_image->data[y * cmd->ft_image->pitch + x] == 255 ? 0 : 2;//MPP_ENC_OSD_PLT_WHITE
                 // 打印像素值
                 /*
                 printf("Pixel at (%d, %d): %d\n", x, y, gray[gray_index]);
@@ -1268,5 +1285,5 @@ uint8_t freetype_init(MpiEncTestArgs *cmd){
         return 1;
     }
     // 创建灰度图像
-    cmd->ft_image = create_image(320, 48);
+    cmd->ft_image = create_image(480, 48);
 }

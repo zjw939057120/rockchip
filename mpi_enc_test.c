@@ -1201,7 +1201,7 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].font_path = "/opt/font_cn.ttf";
 
         mpiEncTestArgs[i].osd_enable = true;
-        mpiEncTestArgs[i].osd_type = 1;//0 time,1 text
+        mpiEncTestArgs[i].osd_type = 0;//0 time,1 text
         const char *szSour = "我爱中国";
         strcpy(mpiEncTestArgs[i].osd_text,szSour);
 #else
@@ -1212,9 +1212,8 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].osd_type = configjson_get_encode_venc_param_osd_osd_type(i,0);//0 time,1 text
         const char *szSour = configjson_get_encode_venc_param_osd_txt(i,0);
         strcpy(mpiEncTestArgs[i].osd_text,szSour);
-        printf("-----i:%d,enable:%d,type:%d,osd_text:%s\n",i,configjson_get_encode_venc_param_osd_enable(i,0),configjson_get_encode_venc_param_osd_osd_type(i,0),configjson_get_encode_venc_param_osd_txt(i,0));
 #endif
-        printf("-----i:%d,enable:%d,type:%d,osd_text:%s\n",i,mpiEncTestArgs[i].osd_enable,mpiEncTestArgs[i].osd_type,mpiEncTestArgs[i].osd_text);
+        printf("i:%d,enable:%d,type:%d,osd_text:%s\n",i,mpiEncTestArgs[i].osd_enable,mpiEncTestArgs[i].osd_type,mpiEncTestArgs[i].osd_text);
         pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
     }
 
