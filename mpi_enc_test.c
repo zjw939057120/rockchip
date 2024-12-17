@@ -893,7 +893,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 log_len += snprintf(log_buf + log_len, log_size - log_len,
                                     " size %-7zu", len);
 
-                if (mpp_packet_has_meta(packet)) {
+                /*if (mpp_packet_has_meta(packet)) {
                     meta = mpp_packet_get_meta(packet);
                     RK_S32 temporal_id = 0;
                     RK_S32 lt_idx = -1;
@@ -920,7 +920,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                         log_len += snprintf(log_buf + log_len, log_size - log_len, " vi");
                 }
 
-                mpp_log_q(quiet, "chn %d %s\n", chn, log_buf);
+                mpp_log_q(quiet, "chn %d %s\n", chn, log_buf);*/
 
                 mpp_packet_deinit(&packet);
                 fps_calc_inc(cmd->fps);
@@ -1172,9 +1172,8 @@ int main(int argc, char **argv)
 void *startHisiCapture(void *arg)
 #endif
 {
-    setlocale(LC_ALL, "zh_CN.utf8");
-
-    bool enable[4] = {true,true,true,true};
+    env_init();
+    bool enable[4] = {true,true,false,true};
 #ifdef _FILE_OUTPUT_YUV_
     char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/video33", "/dev/video44"};
 #else
@@ -1242,4 +1241,8 @@ void mpp_packet_send(uint8_t chn_id, void *pVoid, int i, size_t len) {
     RK_U64 timestamp = SystemGetMSCount();// RK_MPI_MB_GetTimestamp(mb)/1000;
     CapFun(chn_id, pVoid, streamType, len, len, timestamp, timestamp, 1);
 #endif
+}
+
+void env_init(){
+    setlocale(LC_ALL, "zh_CN.utf8");
 }
