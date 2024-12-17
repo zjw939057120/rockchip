@@ -28,7 +28,7 @@ void clear_image(GrayscaleImage *image);
 void free_image(GrayscaleImage *image);
 
 // 渲染字符到灰度图像
-void render_glyph_to_image(FT_Face face, const wchar_t *text, GrayscaleImage *image);
+void render_glyph_to_image(FT_Face face, const char text[], GrayscaleImage *image);
 
 // 保存灰度图像为 PGM 格式
 void save_image_as_pgm(const char *filename, GrayscaleImage *image);

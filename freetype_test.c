@@ -24,12 +24,15 @@ void free_image(GrayscaleImage *image) {
     }
 }
 
-void render_glyph_to_image(FT_Face face, const wchar_t *text, GrayscaleImage *image) {
+void render_glyph_to_image(FT_Face face, const char text[], GrayscaleImage *image) {
+    wchar_t wchar[128] = {0};
+    mbstowcs(wchar,text,strlen(text));
+
     int x_offset = 2; // X 轴偏移
     int y_offset = 10; // Y 轴偏移
 
-    for (int i = 0; text[i] != '\0'; ++i) {
-        unsigned int codepoint = text[i];  // 获取字符的 Unicode 码点
+    for (int i = 0; wchar[i] != '\0'; ++i) {
+        unsigned int codepoint = wchar[i];  // 获取字符的 Unicode 码点
         FT_Load_Char(face, codepoint, FT_LOAD_RENDER);  // 渲染字符
         FT_GlyphSlot slot = face->glyph;
 

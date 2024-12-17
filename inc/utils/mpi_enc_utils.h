@@ -111,7 +111,7 @@ typedef struct MpiEncTestArgs_t {
     const char *font_path;
     RK_U32 osd_enable;
     RK_U32 osd_type;
-    wchar_t *osd_text;
+    char osd_text[128];
     FT_Library ft_library;
     FT_Face ft_face;
     GrayscaleImage *ft_image;

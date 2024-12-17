@@ -18,6 +18,9 @@
 #include <freetype.h>
 #include <locale.h>
 #include "mpi_enc_test.h"
+#ifndef _FILE_OUTPUT_YUV_
+#include "../../../../config-bridge.h"
+#endif
 
 typedef struct {
     // base flow context
@@ -1172,17 +1175,20 @@ void *startHisiCapture(void *arg)
     setlocale(LC_ALL, "zh_CN.utf8");
 
     bool enable[4] = {true,true,true,true};
-    char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/vide33", "/dev/video44"};
+#ifdef _FILE_OUTPUT_YUV_
+    char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/video33", "/dev/video44"};
+#else
+    char *file_input[4] = {"/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3"};
+#endif
     char *file_output[4] = {"/opt/output_0.h264", "/opt/output_1.h264", "/opt/output_2.h264", "/opt/output_3.h264"};
     char *file_output_yuv[4] = {"/opt/output_0.yuv", "/opt/output_1.yuv", "/opt/output_2.yuv", "/opt/output_3.yuv"};
 
     for (int i = 0; i < 4; ++i) {
+        if (!enable[i])continue;
         mpiEncTestArgs[i].chn_id = i;
         mpiEncTestArgs[i].file_input = file_input[i];
         mpiEncTestArgs[i].file_output = file_output[i];
-#ifdef _FILE_OUTPUT_YUV_
         mpiEncTestArgs[i].file_output_yuv = file_output_yuv[i];
-#endif
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
         mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
         mpiEncTestArgs[i].format = MPP_FMT_YUV420SP;
@@ -1190,16 +1196,25 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].nthreads = 1;
         mpiEncTestArgs[i].width = 1280;
         mpiEncTestArgs[i].height = 720;
+#ifdef _FILE_OUTPUT_YUV_
         mpiEncTestArgs[i].bps_target = 2048 * 1024;
         mpiEncTestArgs[i].font_path = "/opt/font_cn.ttf";
-        mpiEncTestArgs[i].osd_enable = true;
-        mpiEncTestArgs[i].osd_type = 2;//0 实时时间,1 文本,2 滚动文本,3 图片
-        const char *szSour = "我爱中国";
-        wchar_t *text[128] = {0};
-        mbstowcs(text,szSour,strlen(szSour));
-        mpiEncTestArgs[i].osd_text = text;
-        if (!enable[i])continue;
 
+        mpiEncTestArgs[i].osd_enable = true;
+        mpiEncTestArgs[i].osd_type = 1;//0 time,1 text
+        const char *szSour = "我爱中国";
+        strcpy(mpiEncTestArgs[i].osd_text,szSour);
+#else
+        mpiEncTestArgs[i].bps_target = 512 * 1024;
+        mpiEncTestArgs[i].font_path = "/usr/ext/font.ttf";
+
+        mpiEncTestArgs[i].osd_enable = configjson_get_encode_venc_param_osd_enable(i,0);
+        mpiEncTestArgs[i].osd_type = configjson_get_encode_venc_param_osd_osd_type(i,0);//0 time,1 text
+        const char *szSour = configjson_get_encode_venc_param_osd_txt(i,0);
+        strcpy(mpiEncTestArgs[i].osd_text,szSour);
+        printf("-----i:%d,enable:%d,type:%d,osd_text:%s\n",i,configjson_get_encode_venc_param_osd_enable(i,0),configjson_get_encode_venc_param_osd_osd_type(i,0),configjson_get_encode_venc_param_osd_txt(i,0));
+#endif
+        printf("-----i:%d,enable:%d,type:%d,osd_text:%s\n",i,mpiEncTestArgs[i].osd_enable,mpiEncTestArgs[i].osd_type,mpiEncTestArgs[i].osd_text);
         pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
     }
 

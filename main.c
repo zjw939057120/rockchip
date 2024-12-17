@@ -29,9 +29,7 @@ int main() {
 
     // 渲染汉字 "我爱中国"
     const char *szSour = "我爱中国";
-    wchar_t *text[128] = {0};
-    mbstowcs(text,szSour,strlen(szSour));
-    render_glyph_to_image(face, text, image);
+    render_glyph_to_image(face, szSour, image);
 
     // 保存为 PGM 格式
     save_image_as_pgm("/opt/output.pgm", image);
