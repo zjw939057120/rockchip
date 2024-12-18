@@ -1197,7 +1197,7 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].height = 720;
 #ifdef _FILE_OUTPUT_YUV_
         mpiEncTestArgs[i].bps_target = 2048 * 1024;
-        mpiEncTestArgs[i].font_path = "/opt/font_cn.ttf";
+        mpiEncTestArgs[i].font_path = "/opt/font_chinese.ttf";
 
         mpiEncTestArgs[i].osd_enable = true;
         mpiEncTestArgs[i].osd_type = 0;//0 time,1 text

@@ -72,7 +72,7 @@ void save_image_as_pgm(const char *filename, GrayscaleImage *image) {
             // 打印像素值
             //printf("Pixel at (%d, %d): %d\n", x, y, pixel_value);
             printf("%s", pixel_value != 255 ? "@" : " ");
-            if (gray_index % 320 == 0) {
+            if (gray_index % 480 == 0) {
                 printf("\n");
             }
             gray_index++;

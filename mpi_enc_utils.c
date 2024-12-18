@@ -1177,8 +1177,8 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
                 char time_buf[100];
                 time_t t = time(NULL);
                 struct tm tm = *localtime(&t);
-                strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm);
-                sprintf(cmd->osd_text, "通道 %d %s", cmd->chn_id, time_buf);
+                strftime(time_buf, sizeof(time_buf), "%Y/%m/%d/%H:%M:%S", &tm);
+                sprintf(cmd->osd_text, "(通道%d)@%s", cmd->chn_id + 1, time_buf);
             }
                 break;
             case 1://text
@@ -1202,7 +1202,7 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
                 /*
                 printf("Pixel at (%d, %d): %d\n", x, y, gray[gray_index]);
                 printf("%s", ft_image->data[y * ft_image->pitch + x] != 255 ? "@" : " ");
-                if (gray_index % 320 == 0) {
+                if (gray_index % 480 == 0) {
                     printf("\n");
                 }*/
                 gray_index++;

@@ -24,7 +24,7 @@ int main() {
     }
 
     // 创建灰度图像
-    GrayscaleImage *image = create_image(320, 48);
+    GrayscaleImage *image = create_image(480, 48);
     clear_image(image);
 
     // 渲染汉字 "我爱中国"
