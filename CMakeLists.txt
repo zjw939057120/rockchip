@@ -14,6 +14,18 @@ add_executable(main_test main.c freetype_test.c)
 target_link_libraries(main_test
         -lm)
 
+add_executable(tinyalsa
+        tinycap.c
+        mixer.c
+        mixer_hw.c
+        mixer_plugin.c
+        pcm.c
+        pcm_hw.c
+        pcm_plugin.c
+        snd_utils.c
+        )
+target_link_libraries(tinyalsa dl)
+
 # mpp info test
 #add_executable(mpp_inf_testo mpp_info_test.c)
 
