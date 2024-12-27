@@ -107,6 +107,8 @@ typedef struct MpiEncTestArgs_t {
     char                *file_slt;
     uint8_t chn_id;
     const char *file_output_yuv;
+    const char *file_output_yuv_snapshot;
+    const char *file_output_yuv_snapshot_ok;
     pthread_t thread_id;
     const char *font_path;
     RK_U32 osd_enable;

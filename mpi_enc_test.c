@@ -42,6 +42,8 @@ typedef struct {
     FILE *fp_input;
     FILE *fp_output;
     FILE *fp_output_yuv;
+    FILE *fp_output_yuv_snapshot;
+    FILE *fp_output_yuv_snapshot_ok;
     FILE *fp_verify;
 
     /* encoder config set */
@@ -723,6 +725,17 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
+
+                if (access(cmd->file_output_yuv_snapshot_ok, F_OK) && cmd->file_output_yuv_snapshot && cmd->file_output_yuv_snapshot_ok) {
+                    p->fp_output_yuv_snapshot = fopen(cmd->file_output_yuv_snapshot, "w+b");
+                    dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv_snapshot);
+                    fclose(p->fp_output_yuv_snapshot);
+                    p->fp_output_yuv_snapshot = NULL;
+
+                    p->fp_output_yuv_snapshot_ok = fopen(cmd->file_output_yuv_snapshot_ok, "w+b");
+                    fclose(p->fp_output_yuv_snapshot_ok);
+                    p->fp_output_yuv_snapshot_ok = NULL;
+                }
 #ifdef _FILE_OUTPUT_YUV_
                 //dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv);
 #endif
@@ -1173,9 +1186,9 @@ void *startHisiCapture(void *arg)
 #endif
 {
     env_init();
-    bool enable[4] = {true,true,false,true};
+    bool enable[4] = {false,false,false,true};
 #ifdef _FILE_OUTPUT_YUV_
-    char *file_input[4] = {"/dev/video11", "/dev/video22", "/dev/video33", "/dev/video44"};
+    char *file_input[4] = {"/dev/video11", "/dev/video11", "/dev/video11", "/dev/video11"};
 #else
     char *file_input[4] = {"/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3"};
 #endif
@@ -1188,6 +1201,10 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].file_input = file_input[i];
         mpiEncTestArgs[i].file_output = file_output[i];
         mpiEncTestArgs[i].file_output_yuv = file_output_yuv[i];
+        if (i == 3) {
+            mpiEncTestArgs[i].file_output_yuv_snapshot = "/tmp/file_output_yuv_snapshot.nv12";
+            mpiEncTestArgs[i].file_output_yuv_snapshot_ok = "/tmp/file_output_yuv_snapshot.ok";
+        }
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
         mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
         mpiEncTestArgs[i].format = MPP_FMT_YUV420SP;

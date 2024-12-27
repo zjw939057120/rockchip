@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 {
     FILE *file;
     struct wav_header header;
-    unsigned int card = 0;
+    unsigned int card = 3;
     unsigned int device = 0;
     unsigned int channels = 2;
     unsigned int rate = 44100;
@@ -84,57 +84,10 @@ int main(int argc, char **argv)
     unsigned int cap_time = 0;
     enum pcm_format format;
 
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s file.wav [-D card] [-d device]"
-                " [-c channels] [-r rate] [-b bits] [-p period_size]"
-                " [-n n_periods] [-T capture time]\n", argv[0]);
-        return 1;
-    }
-
-    file = fopen(argv[1], "wb");
+    file = fopen("/root/file.wav", "wb");
     if (!file) {
         fprintf(stderr, "Unable to create file '%s'\n", argv[1]);
         return 1;
-    }
-
-    /* parse command line arguments */
-    argv += 2;
-    while (*argv) {
-        if (strcmp(*argv, "-d") == 0) {
-            argv++;
-            if (*argv)
-                device = atoi(*argv);
-        } else if (strcmp(*argv, "-c") == 0) {
-            argv++;
-            if (*argv)
-                channels = atoi(*argv);
-        } else if (strcmp(*argv, "-r") == 0) {
-            argv++;
-            if (*argv)
-                rate = atoi(*argv);
-        } else if (strcmp(*argv, "-b") == 0) {
-            argv++;
-            if (*argv)
-                bits = atoi(*argv);
-        } else if (strcmp(*argv, "-D") == 0) {
-            argv++;
-            if (*argv)
-                card = atoi(*argv);
-        } else if (strcmp(*argv, "-p") == 0) {
-            argv++;
-            if (*argv)
-                period_size = atoi(*argv);
-        } else if (strcmp(*argv, "-n") == 0) {
-            argv++;
-            if (*argv)
-                period_count = atoi(*argv);
-        } else if (strcmp(*argv, "-T") == 0) {
-            argv++;
-            if (*argv)
-                cap_time = atoi(*argv);
-        }
-        if (*argv)
-            argv++;
     }
 
     header.riff_id = ID_RIFF;
