@@ -726,7 +726,9 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
 
-                if (access(cmd->file_output_yuv_snapshot_ok, F_OK) && cmd->file_output_yuv_snapshot && cmd->file_output_yuv_snapshot_ok) {
+                time_t stamp = time(NULL);
+                if (stamp + cmd->file_output_yuv_snapshot_period >=  cmd->timestamp && access(cmd->file_output_yuv_snapshot_ok, F_OK) && cmd->file_output_yuv_snapshot && cmd->file_output_yuv_snapshot_ok) {
+                    cmd->timestamp = stamp;
                     p->fp_output_yuv_snapshot = fopen(cmd->file_output_yuv_snapshot, "w+b");
                     dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv_snapshot);
                     fclose(p->fp_output_yuv_snapshot);
@@ -1204,6 +1206,8 @@ void *startHisiCapture(void *arg)
         if (i == 3) {
             mpiEncTestArgs[i].file_output_yuv_snapshot = "/tmp/file_output_yuv_snapshot.nv12";
             mpiEncTestArgs[i].file_output_yuv_snapshot_ok = "/tmp/file_output_yuv_snapshot.ok";
+            mpiEncTestArgs[i].file_output_yuv_snapshot_period = 3;
+            mpiEncTestArgs[i].timestamp = time(NULL);
         }
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
         mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
