@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.18)
 project(mpp_test_1.0.7)
 #https://github.com/rockchip-linux/mpp/tree/1.0.7/test
+#librga_1.10.0_[9].tar.gz
 #tail -f /var/log/syslog
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 
-include_directories(inc inc/base inc/osal inc/utils inc/stb inc/freetype)
+include_directories(inc inc/base inc/osal inc/utils inc/stb inc/freetype inc/librga librga_utils/inc)
 link_directories(lib)
-link_libraries(rockchip_mpp mpp_base freetype pthread)
+link_libraries(-lrockchip_mpp -lmpp_base -lfreetype -lpthread -lrga -ldl)
 
 add_executable(main_test main.c freetype_test.c)
 target_link_libraries(main_test
@@ -52,6 +53,11 @@ add_executable(mpi_enc_test mpi_enc_test.c
         camera_source.c
         #freetype
         freetype_test.c
+        #librga
+        rga_resize_demo.cpp
+        librga_utils/src/dma_alloc.cpp
+        librga_utils/src/drm_alloc.cpp
+        librga_utils/src/librga_utils.cpp
         )
 target_link_libraries(mpi_enc_test
         -lm)
