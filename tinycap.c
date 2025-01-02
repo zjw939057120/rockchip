@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     unsigned int cap_time = 0;
     enum pcm_format format;
 
-    file = fopen("/root/file.wav", "wb");
+    file = fopen("/opt/file.pcm", "wb");
     if (!file) {
         fprintf(stderr, "Unable to create file '%s'\n", argv[1]);
         return 1;
