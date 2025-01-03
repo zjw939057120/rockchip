@@ -13,8 +13,8 @@ int main(int argc, char *argv[]) {
     /* 输入/输出文件 */
     FILE *fpPcm = NULL;
     FILE *fpAac = NULL;
-    char pcmFileName[128] = "/opt/file.wav";
-    char aacFileName[128] = "/opt/file.aac";
+    const char *file_input_wav = "/opt/file.wav";
+    const char *file_output_aac = "/opt/file.aac";
 
     /* PCM参数 */
     unsigned int u32PcmSampleRate = 44100; // 采样率
@@ -32,46 +32,18 @@ int main(int argc, char *argv[]) {
     unsigned char *pu8PcmInBuf = NULL; // 读取pcm并传递进去编码的缓存指针，后面根据编码器传出参数malloc分配
     unsigned char *pu8AacEncBuf = NULL; // 编码得到的aac缓存，后面根据编码器传出参数malloc分配
 
-    /* 解析命令行参数 */
-    char option = 0;
-    int option_index = 0;
-    char *short_options = "hi:r:b:c:o:";
-    struct option long_options[] =
-            {
-                    {"help",           no_argument,       NULL, 'h'},
-                    {"input_pcmfile",  required_argument, NULL, 'i'},
-                    {"sample_rate",    required_argument, NULL, 'r'},
-                    {"sample_bits",    required_argument, NULL, 'b'},
-                    {"channels",       required_argument, NULL, 'c'},
-                    {"output_aacfile", required_argument, NULL, 'o'},
-                    {NULL, 0,                             NULL, 0},
-            };
-
-    printf("\n**************************************\n"
-           "input: \n"
-           "\t file name: %s\n"
-           "\t sample rate: %d Hz\n"
-           "\t sample bits: %d bits\n"
-           "\t channels: %d\n"
-           "\t bits per second: %d bps\n"
-           "output: \n"
-           "\t file name: %s\n"
-           "**************************************\n\n",
-           pcmFileName, u32PcmSampleRate, u32PcmSampleBits, u32PcmChannels,
-           u32PcmSampleRate * u32PcmSampleBits * u32PcmChannels, aacFileName);
-
     /* 先打开输入/输出文件 */
-    fpPcm = fopen(pcmFileName, "rb");
+    fpPcm = fopen(file_input_wav, "rb");
     if (fpPcm == NULL) {
         char errMsg[128] = {0};
-        snprintf(errMsg, 128, "open file(%s) error", pcmFileName);
+        snprintf(errMsg, 128, "open file(%s) error", file_input_wav);
         perror(errMsg);
         return -1;
     }
-    fpAac = fopen(aacFileName, "wb");
+    fpAac = fopen(file_output_aac, "wb");
     if (fpAac == NULL) {
         char errMsg[128] = {0};
-        snprintf(errMsg, 128, "open file(%s) error", aacFileName);
+        snprintf(errMsg, 128, "open file(%s) error", file_output_aac);
         perror(errMsg);
         return -1;
     }
@@ -179,7 +151,7 @@ int main(int argc, char *argv[]) {
         fwrite(pu8AacEncBuf, 1, outArgs.numOutBytes, fpAac);
     }
 
-    printf("\n\033[32m%s ==> %s Success!\033[0m\n", pcmFileName, aacFileName);
+    printf("\n\033[32m%s ==> %s Success!\033[0m\n", file_input_wav, file_output_aac);
 
     error_exit3:
 

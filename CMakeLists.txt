@@ -25,7 +25,7 @@ add_executable(tinyalsa
         pcm_plugin.c
         snd_utils.c
         )
-target_link_libraries(tinyalsa dl)
+target_link_libraries(tinyalsa fdk-aac dl)
 
 add_executable(aac-enc
         aac-enc.c
