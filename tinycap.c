@@ -34,6 +34,7 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "tinycap.h"
 
 #define ID_RIFF 0x46464952
@@ -329,10 +330,10 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         if (aacErrNum != AACENC_OK) {
             printf("Aac encoder encode error!\n");
         }
-
+#ifdef _ENV_DEBUG_
         DEBUG("IN(pcm): [buf bytes: %4d] [channels: %d] [sample cnt per channel: %4d]  ==>   OUT(aac): [encode out bytes: %4d] \n",
               s32ReadPcmBytes, u32PcmChannels, inArgs.numInSamples / u32PcmChannels, outArgs.numOutBytes);
-
+#endif
         if (outArgs.numOutBytes == 0) {
             continue;
         }
@@ -362,11 +363,9 @@ int main(int argc, char **argv) {
     tinycap_capture();
 }
 
-#else
+#endif
 
-int tinycap_capture_thread() {
+void tinycap_capture_thread() {
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, (void *(*)(void *)) tinycap_capture, NULL);
 }
-
-#endif

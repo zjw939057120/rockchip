@@ -11,13 +11,13 @@
 #define DEBUG(fmt, args...)    printf(fmt, ##args)
 
 int tinycap_capture();
-int tinycap_capture_thread();
+void tinycap_capture_thread();
 
 #ifndef XS_STREAM_AUDIO_AAC
 #define XS_STREAM_AUDIO_AAC 1
 #endif
 
-#define FILE_OUTPUT_WAV
-#define FILE_OUTPUT_AAC
+//#define FILE_OUTPUT_WAV
+//#define FILE_OUTPUT_AAC
 
 #endif //MPP_TINYCAP_H
