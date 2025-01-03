@@ -28,7 +28,7 @@
 
 void enc_test_multi_ex(MpiEncTestArgs* cmd);
 
-void mpp_packet_send(uint8_t chn_id, void *pVoid, int i, size_t len);
+void mpp_packet_send(uint8_t chn_id, void *pVoid, uint8_t streamType, int i, size_t len);
 
 void env_init();
 
@@ -36,8 +36,10 @@ void env_init();
 #define _FILE_OUTPUT_H264_
 #define _FILE_OUTPUT_OSD_
 #define _FILE_OUTPUT_YUV_
-#define _FILE_OUTPUT_TEST_
 MpiEncTestArgs mpiEncTestArgs[_OUTPUT_CHANNEL_MAX_];
-uint8_t streamType = 0;  //XSTRIVE_STREAM_VIDEO_H264
+
+#ifndef XS_STREAM_VIDEO_H264
+#define XS_STREAM_VIDEO_H264 0
+#endif
 
 #endif //MPP_MPI_ENC_TEST_H

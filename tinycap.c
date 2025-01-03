@@ -33,6 +33,7 @@
 #include <signal.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 #include "tinycap.h"
 
 #define ID_RIFF 0x46464952
@@ -339,6 +340,9 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         /* AAC编码 7/8：将编码出的aac数据写入文件 */
         fwrite(pu8AacEncBuf, 1, outArgs.numOutBytes, fp_output_aac);
 #endif
+#ifndef _ENV_DEBUG_
+        mpp_packet_send(3, pu8AacEncBuf, XS_STREAM_AUDIO_AAC, 1, outArgs.numOutBytes);
+#endif
     }
     free(pu8AacEncBuf);
     aacEncClose(&aacEncHandle);
@@ -352,6 +356,17 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     return frames;
 }
 
+#ifdef _ENV_DEBUG_
+
 int main(int argc, char **argv) {
     tinycap_capture();
 }
+
+#else
+
+int tinycap_capture_thread() {
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, (void *(*)(void *)) tinycap_capture, NULL);
+}
+
+#endif

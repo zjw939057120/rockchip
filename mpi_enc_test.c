@@ -18,7 +18,7 @@
 #include <freetype.h>
 #include <locale.h>
 #include "mpi_enc_test.h"
-#ifndef _FILE_OUTPUT_YUV_
+#ifndef _ENV_DEBUG_
 #include "../../../../config-bridge.h"
 #endif
 
@@ -673,7 +673,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
             if (p->fp_output)
                 fwrite(ptr, 1, len, p->fp_output);
 #endif
-            mpp_packet_send(cmd->chn_id, ptr, 1, len);
+            mpp_packet_send(cmd->chn_id, ptr, XS_STREAM_VIDEO_H264,1, len);
         }
 
         mpp_packet_deinit(&packet);
@@ -885,7 +885,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 if (p->fp_output)
                     fwrite(ptr, 1, len, p->fp_output);
 #endif
-                mpp_packet_send(cmd->chn_id, ptr, 1, len);
+                mpp_packet_send(cmd->chn_id, ptr, XS_STREAM_VIDEO_H264, 1, len);
 
                 if (p->fp_verify && !p->pkt_eos) {
                     calc_data_crc((RK_U8 *)ptr, (RK_U32)len, &checkcrc);
@@ -953,7 +953,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
         if (cam_frm_idx >= 0)
             camera_source_put_frame(p->cam_ctx, cam_frm_idx);
 
-#ifdef _FILE_OUTPUT_TEST_
+#ifdef _ENV_DEBUG_
         if (p->frame_num > 0 && p->frame_count >= p->frame_num){
             kill(getppid(), SIGQUIT);
             break;
@@ -1180,7 +1180,7 @@ int enc_test_multi(MpiEncTestArgs* cmd, const char *name)
     return ret;
 }
 
-#ifdef _FILE_OUTPUT_YUV_
+#ifdef _ENV_DEBUG_
 
 int main(int argc, char **argv)
 #else
@@ -1189,7 +1189,7 @@ void *startHisiCapture(void *arg)
 {
     env_init();
     bool enable[4] = {false,false,false,true};
-#ifdef _FILE_OUTPUT_YUV_
+#ifdef _ENV_DEBUG_
     char *file_input[4] = {"/dev/video11", "/dev/video11", "/dev/video11", "/dev/video11"};
 #else
     char *file_input[4] = {"/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3"};
@@ -1216,7 +1216,7 @@ void *startHisiCapture(void *arg)
         mpiEncTestArgs[i].nthreads = 1;
         mpiEncTestArgs[i].width = 1280;
         mpiEncTestArgs[i].height = 720;
-#ifdef _FILE_OUTPUT_YUV_
+#ifdef _ENV_DEBUG_
         mpiEncTestArgs[i].bps_target = 2048 * 1024;
         mpiEncTestArgs[i].font_path = "/opt/font_chinese.ttf";
 
@@ -1257,8 +1257,8 @@ void enc_test_multi_ex(MpiEncTestArgs *cmd) {
 
 }
 
-void mpp_packet_send(uint8_t chn_id, void *pVoid, int i, size_t len) {
-#ifndef _FILE_OUTPUT_YUV_
+void mpp_packet_send(uint8_t chn_id, void *pVoid, uint8_t streamType, int i, size_t len) {
+#ifndef _ENV_DEBUG_
     RK_U64 timestamp = SystemGetMSCount();// RK_MPI_MB_GetTimestamp(mb)/1000;
     CapFun(chn_id, pVoid, streamType, len, len, timestamp, timestamp, 1);
 #endif

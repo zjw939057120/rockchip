@@ -7,6 +7,8 @@ project(mpp_test_1.0.7)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 
+add_definitions(-D_ENV_DEBUG_)
+
 include_directories(inc inc/base inc/osal inc/utils inc/stb inc/freetype inc/librga librga_utils/inc)
 link_directories(lib)
 link_libraries(-lrockchip_mpp -lmpp_base -lfreetype -lpthread -lrga -ldl)
