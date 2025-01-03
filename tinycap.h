@@ -12,4 +12,7 @@
 
 int tinycap_capture();
 
+#define FILE_OUTPUT_WAV
+#define FILE_OUTPUT_AAC
+
 #endif //MPP_TINYCAP_H

@@ -70,7 +70,9 @@ void sigint_handler(int sig) {
 }
 
 int tinycap_capture() {
+#ifdef FILE_OUTPUT_WAV
     const char *file_output_wav = "/opt/file.wav";
+#endif
     FILE *fp_output_wav;
     struct wav_header header;
     unsigned int card = 3;
@@ -84,11 +86,13 @@ int tinycap_capture() {
     unsigned int cap_time = 0;
     enum pcm_format format;
 
+#ifdef FILE_OUTPUT_WAV
     fp_output_wav = fopen(file_output_wav, "wb");
     if (!fp_output_wav) {
         fprintf(stderr, "Unable to create file '%s'\n", file_output_wav);
         return 1;
     }
+#endif
 
     header.riff_id = ID_RIFF;
     header.riff_sz = 0;
@@ -111,7 +115,8 @@ int tinycap_capture() {
             break;
         default:
             fprintf(stderr, "%u bits is not supported.\n", bits);
-            fclose(fp_output_wav);
+            if (fp_output_wav)
+                fclose(fp_output_wav);
             return 1;
     }
 
@@ -121,7 +126,9 @@ int tinycap_capture() {
     header.data_id = ID_DATA;
 
     /* leave enough room for header */
+#ifdef FILE_OUTPUT_WAV
     fseek(fp_output_wav, sizeof(struct wav_header), SEEK_SET);
+#endif
 
     /* install signal handler and begin capturing */
     signal(SIGINT, sigint_handler);
@@ -135,11 +142,12 @@ int tinycap_capture() {
     /* write header now all information is known */
     header.data_sz = frames * header.block_align;
     header.riff_sz = header.data_sz + sizeof(header) - 8;
+#ifdef FILE_OUTPUT_WAV
     fseek(fp_output_wav, 0, SEEK_SET);
     fwrite(&header, sizeof(struct wav_header), 1, fp_output_wav);
 
     fclose(fp_output_wav);
-
+#endif
     return 0;
 }
 
@@ -184,6 +192,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         return 0;
     }
 
+#ifdef FILE_OUTPUT_AAC
     const char *file_output_aac = "/opt/file.aac";
     FILE *fp_output_aac;
     fp_output_aac = fopen(file_output_aac, "wb");
@@ -191,6 +200,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         fprintf(stderr, "Unable to create file '%s'\n", file_output_aac);
         return 1;
     }
+#endif
 
     /* PCM参数 */
     unsigned int u32PcmSampleRate = 44100; // 采样率
@@ -205,10 +215,10 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     /* 编码相关参数 */
     unsigned int u32PcmInBufBytes = 0;    // 编码时需要传入的PCM数据大小（字节数）
     unsigned int u32AacOutBufMaxBytes = 0; // 编码后得到一帧aac数据最大的大小（字节数）
-    unsigned char *pu8PcmInBuf = NULL; // 读取pcm并传递进去编码的缓存指针，后面根据编码器传出参数malloc分配
     unsigned char *pu8AacEncBuf = NULL; // 编码得到的aac缓存，后面根据编码器传出参数malloc分配
 
     /* 先打开输入/输出文件 */
+#ifdef FILE_OUTPUT_AAC
     fp_output_aac = fopen(file_output_aac, "wb");
     if (fp_output_aac == NULL) {
         char errMsg[128] = {0};
@@ -216,6 +226,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         perror(errMsg);
         return -1;
     }
+#endif
 
     /* AAC编码 1/8：打开编码器，传出编码器句柄 */
     aacErrNum = aacEncOpen(&aacEncHandle, 0, u32PcmChannels);
@@ -260,7 +271,6 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     DEBUG("PCM should in bytes: %d \t AAC out max bytes: %d\n", u32PcmInBufBytes, u32AacOutBufMaxBytes);
 
     /* 根据上面打开编码器信息分配对应大小的缓存 */
-    pu8PcmInBuf = (unsigned char *) malloc(u32PcmInBufBytes);
     pu8AacEncBuf = (unsigned char *) malloc(u32AacOutBufMaxBytes);
 
 
@@ -272,10 +282,12 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     end.tv_nsec = now.tv_nsec;
 
     while (capturing && !pcm_read(pcm, buffer, size)) {
+#ifdef FILE_OUTPUT_WAV
         if (fwrite(buffer, 1, size, file) != size) {
             fprintf(stderr, "Error capturing sample\n");
             break;
         }
+#endif
         bytes_read += size;
         if (cap_time) {
             clock_gettime(CLOCK_MONOTONIC, &now);
@@ -295,12 +307,6 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         //int outElsize = 1;
         int inElsize = sizeof(INT_PCM); // 参考aacenc_lib.h:260示例
         int outElsize = sizeof(UCHAR);
-
-        /* AAC编码 4/8：填充编码器需要的参数，包括编码的pcm数据地址，大小等 */
-//        int s32ReadPcmBytes = fread(pu8PcmInBuf, 1, u32PcmInBufBytes, fpPcm);
-//        if (s32ReadPcmBytes <= 0) {
-//            break;
-//        }
 
         /* AAC编码 5/8：填充编码器需要的参数，包括编码的pcm数据地址，大小等 */
         inPcmBufDesc.numBufs = 1;
@@ -329,14 +335,16 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         if (outArgs.numOutBytes == 0) {
             continue;
         }
-
+#ifdef FILE_OUTPUT_AAC
         /* AAC编码 7/8：将编码出的aac数据写入文件 */
         fwrite(pu8AacEncBuf, 1, outArgs.numOutBytes, fp_output_aac);
+#endif
     }
-    free(pu8PcmInBuf);
     free(pu8AacEncBuf);
     aacEncClose(&aacEncHandle);
+#ifdef FILE_OUTPUT_AAC
     fclose(fp_output_aac);
+#endif
 
     frames = pcm_bytes_to_frames(pcm, bytes_read);
     free(buffer);
