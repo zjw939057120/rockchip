@@ -175,7 +175,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     s32ReadPcmBytes = pcm_get_buffer_size(pcm);
-    size = pcm_frames_to_bytes(pcm, pcm_get_buffer_size(pcm));
+    size = s32ReadPcmBytes;
     buffer = malloc(size);
     if (!buffer) {
         fprintf(stderr, "Unable to allocate %u bytes\n", size);
