@@ -1116,7 +1116,7 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
     RK_U32 num_region = 1;
     RK_U32 buf_offset = 0;
     RK_U32 buf_size = 0;
-    RK_U32 mb_w_max = 240;
+    RK_U32 mb_w_max = 480;
     RK_U32 mb_h_max = MPP_ALIGN(height, 16) / 16;
     RK_U32 step_x = MPP_ALIGN(mb_w_max, 8) / 8;
     RK_U32 step_y = MPP_ALIGN(mb_h_max, 16) / 16;
@@ -1174,11 +1174,14 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
         switch (cmd->osd_type) {
             case 0://time
             {
-                char time_buf[100];
-                time_t t = time(NULL);
-                struct tm tm = *localtime(&t);
-                strftime(time_buf, sizeof(time_buf), "%Y/%m/%d/%H:%M:%S", &tm);
-                sprintf(cmd->osd_text, "(通道%d)@%s", cmd->chn_id + 1, time_buf);
+                time_t stamp = time(NULL);
+                if (stamp - cmd->timestamp_osd >= 1) {
+                    cmd->timestamp_osd = stamp;
+                    char time_buf[100];
+                    struct tm tm = *localtime(&stamp);
+                    strftime(time_buf, sizeof(time_buf), "%Y/%m/%d %H:%M:%S", &tm);
+                    sprintf(cmd->osd_text, "（通道%d） %s  114.398765/30.476549  0.00 km/h", cmd->chn_id + 1, time_buf);
+                }
             }
                 break;
             case 1://text
@@ -1202,7 +1205,7 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
                 /*
                 printf("Pixel at (%d, %d): %d\n", x, y, gray[gray_index]);
                 printf("%s", ft_image->data[y * ft_image->pitch + x] != 255 ? "@" : " ");
-                if (gray_index % 480 == 0) {
+                if (gray_index % 720 == 0) {
                     printf("\n");
                 }*/
                 gray_index++;
@@ -1285,5 +1288,5 @@ uint8_t freetype_init(MpiEncTestArgs *cmd){
         return 1;
     }
     // 创建灰度图像
-    cmd->ft_image = create_image(480, 48);
+    cmd->ft_image = create_image(960, 48);
 }

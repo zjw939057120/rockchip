@@ -111,6 +111,7 @@ typedef struct MpiEncTestArgs_t {
     const char *file_output_yuv_snapshot_ok;
     uint32_t file_output_yuv_snapshot_period;
     time_t timestamp;
+    time_t timestamp_osd;
     pthread_t thread_id;
     const char *font_path;
     RK_U32 osd_enable;

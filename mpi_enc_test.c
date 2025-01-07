@@ -727,7 +727,7 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 mpp_assert(cam_buf);
 
                 time_t stamp = time(NULL);
-                if (stamp + cmd->file_output_yuv_snapshot_period >=  cmd->timestamp && access(cmd->file_output_yuv_snapshot_ok, F_OK) && cmd->file_output_yuv_snapshot && cmd->file_output_yuv_snapshot_ok) {
+                if (stamp - cmd->timestamp >= cmd->file_output_yuv_snapshot_period && access(cmd->file_output_yuv_snapshot_ok, F_OK) && cmd->file_output_yuv_snapshot && cmd->file_output_yuv_snapshot_ok) {
                     cmd->timestamp = stamp;
                     p->fp_output_yuv_snapshot = fopen(cmd->file_output_yuv_snapshot, "w+b");
                     dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv_snapshot);
@@ -1233,6 +1233,8 @@ void *startHisiCapture(void *arg)
         const char *szSour = configjson_get_encode_venc_param_osd_txt(i,0);
         strcpy(mpiEncTestArgs[i].osd_text,szSour);
 #endif
+        mpiEncTestArgs[i].timestamp = time(NULL);
+        mpiEncTestArgs[i].timestamp_osd = time(NULL);
         printf("i:%d,enable:%d,type:%d,osd_text:%s\n",i,mpiEncTestArgs[i].osd_enable,mpiEncTestArgs[i].osd_type,mpiEncTestArgs[i].osd_text);
         pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
     }

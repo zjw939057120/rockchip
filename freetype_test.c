@@ -29,7 +29,7 @@ void render_glyph_to_image(FT_Face face, const char text[], GrayscaleImage *imag
     mbstowcs(wchar,text,strlen(text));
 
     int x_offset = 2; // X 轴偏移
-    int y_offset = 10; // Y 轴偏移
+    int y_offset = 16; // Y 轴偏移
 
     for (int i = 0; wchar[i] != '\0'; ++i) {
         unsigned int codepoint = wchar[i];  // 获取字符的 Unicode 码点
@@ -39,7 +39,9 @@ void render_glyph_to_image(FT_Face face, const char text[], GrayscaleImage *imag
         // 获取字形的宽度和高度
         int width = slot->bitmap.width;
         int height = slot->bitmap.rows;
+        y_offset = 16 - slot->bitmap_top + 16;
 
+        if (codepoint == 32) { x_offset = x_offset + 4; } // 处理空格
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 int pixel_value = slot->bitmap.buffer[y * width + x];
@@ -72,7 +74,7 @@ void save_image_as_pgm(const char *filename, GrayscaleImage *image) {
             // 打印像素值
             //printf("Pixel at (%d, %d): %d\n", x, y, pixel_value);
             printf("%s", pixel_value != 255 ? "@" : " ");
-            if (gray_index % 480 == 0) {
+            if (gray_index % 960 == 0) {
                 printf("\n");
             }
             gray_index++;

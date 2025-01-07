@@ -3,7 +3,7 @@
 int main() {
     FT_Library library;
     FT_Face face;
-    const char *font_path = "/opt/hei.TTF";  // 替换为合适的字体文件路径
+    const char *font_path = "/opt/font_chinese.ttf";  // 替换为合适的字体文件路径
 
     // 初始化 FreeType 库
     if (FT_Init_FreeType(&library)) {
@@ -24,11 +24,11 @@ int main() {
     }
 
     // 创建灰度图像
-    GrayscaleImage *image = create_image(480, 48);
+    GrayscaleImage *image = create_image(960, 48);
     clear_image(image);
 
     // 渲染汉字 "我爱中国"
-    const char *szSour = "我爱中国";
+    const char *szSour = "(我爱中国1)2025/01/07   13:58:59   114.39/30.47   0.00 km/h";
     render_glyph_to_image(face, szSour, image);
 
     // 保存为 PGM 格式
