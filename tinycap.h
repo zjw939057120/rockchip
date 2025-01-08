@@ -17,6 +17,11 @@ void tinycap_capture_thread();
 #define XS_STREAM_AUDIO_AAC 1
 #endif
 
+#define AUDIO_CHANNEL_0 0
+#define AUDIO_CHANNEL_1 1
+//#define AUDIO_CHANNEL_2 2
+//#define AUDIO_CHANNEL_3 3
+
 //#define FILE_OUTPUT_WAV
 //#define FILE_OUTPUT_AAC
 

@@ -342,7 +342,18 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         fwrite(pu8AacEncBuf, 1, outArgs.numOutBytes, fp_output_aac);
 #endif
 #ifndef _ENV_DEBUG_
-        mpp_packet_send(3, pu8AacEncBuf, XS_STREAM_AUDIO_AAC, 1, outArgs.numOutBytes);
+#ifdef AUDIO_CHANNEL_0
+        mpp_packet_send(AUDIO_CHANNEL_0, pu8AacEncBuf, XS_STREAM_AUDIO_AAC, 1, outArgs.numOutBytes);
+#endif
+#ifdef AUDIO_CHANNEL_1
+        mpp_packet_send(AUDIO_CHANNEL_1, pu8AacEncBuf, XS_STREAM_AUDIO_AAC, 1, outArgs.numOutBytes);
+#endif
+#ifdef AUDIO_CHANNEL_2
+        mpp_packet_send(AUDIO_CHANNEL_2, pu8AacEncBuf, XS_STREAM_AUDIO_AAC, 1, outArgs.numOutBytes);
+#endif
+#ifdef AUDIO_CHANNEL_3
+        mpp_packet_send(AUDIO_CHANNEL_3, pu8AacEncBuf, XS_STREAM_AUDIO_AAC, 1, outArgs.numOutBytes);
+#endif
 #endif
     }
     free(pu8AacEncBuf);
