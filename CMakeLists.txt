@@ -29,11 +29,6 @@ add_executable(tinyalsa
         )
 target_link_libraries(tinyalsa fdk-aac dl)
 
-add_executable(aac-enc
-        aac-enc.c
-        )
-target_link_libraries(aac-enc fdk-aac dl)
-
 # mpp info test
 #add_executable(mpp_inf_testo mpp_info_test.c)
 

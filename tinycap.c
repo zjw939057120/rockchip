@@ -205,7 +205,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
 #endif
 
     /* PCM参数 */
-    unsigned int u32PcmSampleRate = 44100; // 采样率
+    unsigned int u32PcmSampleRate = 48000; // 采样率
     unsigned int u32PcmSampleBits = 16; // 采样位数
     unsigned int u32PcmChannels = 2; // 声道数
 
@@ -247,9 +247,9 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
                                      (u32PcmChannels == 1) ? MODE_1 : MODE_2); // 声道模式，还有多种模式，这里只列出2种
     aacErrNum |= aacEncoder_SetParam(aacEncHandle, AACENC_CHANNELORDER,
                                      1);    // 输入音频数据通道排序方案，0: MPEG频道排序（默认） 1: WAVE文件格式通道排序
-    aacErrNum |= aacEncoder_SetParam(aacEncHandle, AACENC_BITRATEMODE, 5);        // 比特率模式，0:CBR  1~5:VBR（数值越大动态码率越高）
+    aacErrNum |= aacEncoder_SetParam(aacEncHandle, AACENC_BITRATEMODE, 0);        // 比特率模式，0:CBR  1~5:VBR（数值越大动态码率越高）
     aacErrNum |= aacEncoder_SetParam(aacEncHandle, AACENC_BITRATE,
-                                     128000);    // 设置比特率大小，只有AACENC_BITRATEMODE设置为静态码率CBR时生效，VBR时忽略
+                                     64000);    // 设置比特率大小，只有AACENC_BITRATEMODE设置为静态码率CBR时生效，VBR时忽略
     aacErrNum |= aacEncoder_SetParam(aacEncHandle, AACENC_TRANSMUX,
                                      TT_MP4_ADTS); // 传输类型，TT_MP4_ADIF/TT_MP4_ADTS/TT_MP4_LATM_MCP1...
     aacErrNum |= aacEncoder_SetParam(aacEncHandle, AACENC_AFTERBURNER,
