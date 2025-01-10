@@ -44,7 +44,7 @@ void record_snapshot_notification_handle(uint8_t chn_id);
 
 void record_snapshot_notification_thread(uint8_t chn_id);
 
-void broadcast_warn(uint8_t warn, char *img, time_t video);
+void broadcast_warn(char *warn, char *img, char *video);
 #define _OUTPUT_CHANNEL_MAX_ 4
 #ifdef _ENV_DEBUG_
 #define _FILE_OUTPUT_H264_

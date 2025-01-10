@@ -1308,6 +1308,8 @@ void yuv_snapshot(uint8_t chn_id, MppBuffer *buffer) {
 
 time_t timestamp_record_snapshot[_OUTPUT_CHANNEL_MAX_] = {0, 0, 0, 0};
 FILE *fp_output_record_snapshot[_OUTPUT_CHANNEL_MAX_] = {NULL, NULL, NULL, NULL};
+char rknn_record_type[128];
+char rknn_record_name[128];
 
 void record_snapshot(uint8_t chn_id, const void *ptr, size_t len) {
     if (access(mpiEncTestArgs[chn_id].record_snapshot_notification, F_OK) != 0)
@@ -1316,15 +1318,8 @@ void record_snapshot(uint8_t chn_id, const void *ptr, size_t len) {
     time_t stamp = time(NULL);
     if (timestamp_record_snapshot[chn_id] == 0) {
         goto RECORD_DONE;
-    } else if (stamp > timestamp_record_snapshot[chn_id] + 1) {
-        FILE *fp = fopen(mpiEncTestArgs[chn_id].file_input_rknn_result, "r");
-        if (fp) {
-            char buffer[256] = ""; // 缓冲区大小
-            while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-            }
-            printf("rknn_result:%d,%s\n", buffer[0] - '0', &buffer[2]);
-            broadcast_warn(buffer[0] - '0', &buffer[2], timestamp_record_snapshot[chn_id]);
-        }
+    } else if (stamp > timestamp_record_snapshot[chn_id] + 10) {
+        broadcast_warn(rknn_record_type, rknn_record_name, rknn_record_name);
         unlink(mpiEncTestArgs[chn_id].file_input_rknn_result_ok);
         unlink(mpiEncTestArgs[chn_id].file_input_rknn_result);
         unlink(mpiEncTestArgs[chn_id].record_snapshot_notification);
@@ -1335,7 +1330,7 @@ void record_snapshot(uint8_t chn_id, const void *ptr, size_t len) {
 
     const char *dir_name = "/storage/emulated/0/Documents";
     char file_output[128];
-    sprintf(file_output, "%s/%ld.ts", dir_name, timestamp_record_snapshot[chn_id]);
+    sprintf(file_output, "%s/%s.ts", dir_name, rknn_record_name);
     if (access(file_output, F_OK) != 0) {
         printf("%d record_snapshot create %d\n", __LINE__, chn_id);
         fp_output_record_snapshot[chn_id] = fopen(file_output, "w+b");
@@ -1358,8 +1353,30 @@ void record_snapshot_notification_handle(uint8_t chn_id) {
     while (1) {
         //printf("%d record_snapshot_notification_handle %d\n", __LINE__, chn_id);
         if (access(mpiEncTestArgs[chn_id].record_snapshot_notification, F_OK) != 0 &&
-            access(mpiEncTestArgs[chn_id].file_input_rknn_result_ok, F_OK) == 0) {
+            access(mpiEncTestArgs[chn_id].file_input_rknn_result_ok, F_OK) == 0 &&
+            access(mpiEncTestArgs[chn_id].file_input_rknn_result, F_OK) == 0) {
             printf("%d record_snapshot_notification %d\n", __LINE__, chn_id);
+
+            FILE *file = fopen(mpiEncTestArgs[chn_id].file_input_rknn_result, "r");
+            if (file == NULL)
+                continue;
+
+            char buffer[128];
+            size_t bytesRead;
+            while ((bytesRead = fread(buffer, 1, sizeof(buffer) - 1, file)) > 0) {
+                buffer[bytesRead] = '\0'; // 确保缓冲区以空字符结尾
+                printf("rknn_result:%s\n", buffer);     // 输出读取的内容
+                memset(rknn_record_name,0,sizeof(rknn_record_name));
+                memset(rknn_record_type,0,sizeof(rknn_record_type));
+                strcpy(rknn_record_name, &buffer[2]);
+                char *dot = strrchr(rknn_record_name, '.'); // 查找最后一个点
+                if (dot) {
+                    *dot = '\0'; // 将点替换为字符串结束符
+                }
+                buffer[1] = '\0';
+                strcpy(rknn_record_type, &buffer[0]);
+            }
+            printf("type:%s,name:%s\n", rknn_record_type, rknn_record_name);     // 输出读取的内容
             timestamp_record_snapshot[chn_id] = time(NULL);
             FILE *fp = fopen(mpiEncTestArgs[chn_id].record_snapshot_notification, "w+b");
             fclose(fp);
@@ -1375,9 +1392,9 @@ void record_snapshot_notification_thread(uint8_t chn_id){
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, (void *(*)(void *)) record_snapshot_notification_handle, chn_id);
 }
-void broadcast_warn(uint8_t warn, char *img, time_t video) {
+void broadcast_warn(char *warn, char *img, char *video) {
     char cmd[128];
-    sprintf(cmd, "/system/bin/am broadcast -a com.xstrive.qdcar --es warn %d --es img %s --es video %ld.ts &", warn, img, video);
+    sprintf(cmd, "/system/bin/am broadcast -a com.xstrive.qdcar --es warn %s --es img %s.jpg --es video %s.ts &", warn, img, video);
     printf("%s", cmd);
     system(cmd);
 }
