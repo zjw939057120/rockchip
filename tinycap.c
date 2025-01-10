@@ -77,10 +77,14 @@ int tinycap_capture() {
 #endif
     FILE *fp_output_wav;
     struct wav_header header;
+#if _ENV_DEBUG_
     unsigned int card = 3;
+#else
+    unsigned int card = 0;
+#endif
     unsigned int device = 0;
     unsigned int channels = 2;
-    unsigned int rate = 44100;
+    unsigned int rate = 48000;
     unsigned int bits = 16;
     unsigned int frames;
     unsigned int period_size = 1024;
@@ -205,9 +209,9 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
 #endif
 
     /* PCM参数 */
-    unsigned int u32PcmSampleRate = 48000; // 采样率
-    unsigned int u32PcmSampleBits = 16; // 采样位数
-    unsigned int u32PcmChannels = 2; // 声道数
+    unsigned int u32PcmSampleRate = rate; // 采样率
+    unsigned int u32PcmSampleBits = bits; // 采样位数
+    unsigned int u32PcmChannels = channels; // 声道数
 
     /* aac编码器 */
     HANDLE_AACENCODER aacEncHandle = NULL; // HANDLE_AACENCODER其实是一个结构体指针

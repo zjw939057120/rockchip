@@ -110,7 +110,11 @@ typedef struct MpiEncTestArgs_t {
     const char *file_output_yuv_snapshot;
     const char *file_output_yuv_snapshot_ok;
     uint32_t file_output_yuv_snapshot_period;
-    time_t timestamp;
+    time_t timestamp_yuv_snapshot;
+    const char *file_input_rknn_result;
+    const char *file_input_rknn_result_ok;
+    const char *record_snapshot_notification;
+
     time_t timestamp_osd;
     pthread_t thread_id;
     const char *font_path;

@@ -42,8 +42,6 @@ typedef struct {
     FILE *fp_input;
     FILE *fp_output;
     FILE *fp_output_yuv;
-    FILE *fp_output_yuv_snapshot;
-    FILE *fp_output_yuv_snapshot_ok;
     FILE *fp_verify;
 
     /* encoder config set */
@@ -726,18 +724,8 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
                 cam_buf = camera_frame_to_buf(p->cam_ctx, cam_frm_idx);
                 mpp_assert(cam_buf);
 
-                time_t stamp = time(NULL);
-                if (stamp - cmd->timestamp >= cmd->file_output_yuv_snapshot_period && access(cmd->file_output_yuv_snapshot_ok, F_OK) && cmd->file_output_yuv_snapshot && cmd->file_output_yuv_snapshot_ok) {
-                    cmd->timestamp = stamp;
-                    p->fp_output_yuv_snapshot = fopen(cmd->file_output_yuv_snapshot, "w+b");
-                    dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv_snapshot);
-                    fclose(p->fp_output_yuv_snapshot);
-                    p->fp_output_yuv_snapshot = NULL;
-
-                    p->fp_output_yuv_snapshot_ok = fopen(cmd->file_output_yuv_snapshot_ok, "w+b");
-                    fclose(p->fp_output_yuv_snapshot_ok);
-                    p->fp_output_yuv_snapshot_ok = NULL;
-                }
+                //生辰yuv快照
+                yuv_snapshot(cmd->chn_id,cam_buf);
 #ifdef _FILE_OUTPUT_YUV_
                 //dump_mpp_buffer_to_file(cam_buf, p->fp_output_yuv);
 #endif
@@ -884,6 +872,11 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 #ifdef _FILE_OUTPUT_H264_
                 if (p->fp_output)
                     fwrite(ptr, 1, len, p->fp_output);
+#endif
+#if _ENV_DEBUG_
+                if(_FILE_OUTPUT_RECORD_SNAPSHOT_CHANNEL == cmd->chn_id){
+                    record_snapshot(cmd->chn_id, ptr, len);
+                }
 #endif
                 mpp_packet_send(cmd->chn_id, ptr, XS_STREAM_VIDEO_H264, 1, len);
 
@@ -1188,10 +1181,11 @@ void *startHisiCapture(void *arg)
 #endif
 {
     env_init();
-    bool enable[4] = {false,false,false,true};
 #ifdef _ENV_DEBUG_
+    bool enable[4] = {false,false,false,true};
     char *file_input[4] = {"/dev/video11", "/dev/video11", "/dev/video11", "/dev/video11"};
 #else
+    bool enable[4] = {true,true,false,true};
     char *file_input[4] = {"/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3"};
 #endif
     char *file_output[4] = {"/opt/output_0.h264", "/opt/output_1.h264", "/opt/output_2.h264", "/opt/output_3.h264"};
@@ -1207,7 +1201,11 @@ void *startHisiCapture(void *arg)
             mpiEncTestArgs[i].file_output_yuv_snapshot = "/tmp/file_output_yuv_snapshot.nv12";
             mpiEncTestArgs[i].file_output_yuv_snapshot_ok = "/tmp/file_output_yuv_snapshot.ok";
             mpiEncTestArgs[i].file_output_yuv_snapshot_period = 3;
-            mpiEncTestArgs[i].timestamp = time(NULL);
+            mpiEncTestArgs[i].timestamp_yuv_snapshot = time(NULL);
+            mpiEncTestArgs[i].file_input_rknn_result = "/storage/emulated/0/Documents/rec_result.txt";
+            mpiEncTestArgs[i].file_input_rknn_result_ok = "/storage/emulated/0/Documents/rec_result.ok";
+            mpiEncTestArgs[i].record_snapshot_notification = "/tmp/record_snapshot_notification_3";
+            mpiEncTestArgs[i].timestamp_osd = time(NULL);
         }
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
         mpiEncTestArgs[i].type_src = MPP_VIDEO_CodingUnused;
@@ -1233,10 +1231,12 @@ void *startHisiCapture(void *arg)
         const char *szSour = configjson_get_encode_venc_param_osd_txt(i,0);
         strcpy(mpiEncTestArgs[i].osd_text,szSour);
 #endif
-        mpiEncTestArgs[i].timestamp = time(NULL);
-        mpiEncTestArgs[i].timestamp_osd = time(NULL);
         printf("i:%d,enable:%d,type:%d,osd_text:%s\n",i,mpiEncTestArgs[i].osd_enable,mpiEncTestArgs[i].osd_type,mpiEncTestArgs[i].osd_text);
-        pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, &mpiEncTestArgs[i]);
+        pthread_create(&mpiEncTestArgs[i].thread_id, NULL, (void *(*)(void *)) enc_test_multi_ex, i);
+
+        if(i == 3){
+            record_snapshot_notification_thread(i);
+        }
     }
 
     while (1) {
@@ -1245,17 +1245,17 @@ void *startHisiCapture(void *arg)
 
 }
 
-void enc_test_multi_ex(MpiEncTestArgs *cmd) {
+void enc_test_multi_ex(uint8_t chn_id) {
 #ifdef _FILE_OUTPUT_OSD_
-    freetype_init(cmd);
+    freetype_init(&mpiEncTestArgs[chn_id]);
 #endif
 
-    mpi_enc_test_cmd_show_opt(cmd);
+    mpi_enc_test_cmd_show_opt(&mpiEncTestArgs[chn_id]);
 
-    enc_test_multi(cmd, cmd->file_input);
+    enc_test_multi(&mpiEncTestArgs[chn_id], mpiEncTestArgs[chn_id].file_input);
 
     DONE:
-    mpi_enc_test_cmd_put(cmd);
+    mpi_enc_test_cmd_put(&mpiEncTestArgs[chn_id]);
 
 }
 
@@ -1268,4 +1268,116 @@ void mpp_packet_send(uint8_t chn_id, void *pVoid, uint8_t streamType, int i, siz
 
 void env_init(){
     setlocale(LC_ALL, "zh_CN.utf8");
+#ifndef _ENV_DEBUG_
+    tinycap_capture_thread();
+    gps_uart_thread();
+#endif
+}
+
+void printf_ptr(void *ptr, size_t len) {
+    printf("len:%zu ", len);
+    unsigned char *bytePtr = (unsigned char *) ptr;
+//    for (int i = 0; i < len; ++i) {
+//        printf("0x%02X,", bytePtr[i]);
+//    }
+    printf("0x%02X,", bytePtr[0]);
+    printf("0x%02X,", bytePtr[len-1]);
+    printf("\n");
+}
+
+void printf_mpp_buffer(MppBuffer *buf) {
+    printf_ptr(mpp_buffer_get_ptr(buf), mpp_buffer_get_size(buf));
+}
+
+void yuv_snapshot(uint8_t chn_id, MppBuffer *buffer) {
+    time_t stamp = time(NULL);
+    if (chn_id == _FILE_OUTPUT_RECORD_SNAPSHOT_CHANNEL && mpiEncTestArgs[chn_id].file_output_yuv && mpiEncTestArgs[chn_id].file_output_yuv_snapshot_ok &&
+        (stamp - mpiEncTestArgs[chn_id].timestamp_yuv_snapshot) >= mpiEncTestArgs[chn_id].file_output_yuv_snapshot_period &&
+        access(mpiEncTestArgs[chn_id].file_output_yuv_snapshot_ok, F_OK) != 0) {
+        mpiEncTestArgs[chn_id].timestamp_yuv_snapshot = stamp;
+        FILE *fp_output_yuv_snapshot = fopen(mpiEncTestArgs[chn_id].file_output_yuv_snapshot, "w+b");
+        dump_mpp_buffer_to_file(buffer, fp_output_yuv_snapshot);
+        fclose(fp_output_yuv_snapshot);
+        fp_output_yuv_snapshot = NULL;
+
+        FILE *fp_output_yuv_snapshot_ok = fopen(mpiEncTestArgs[chn_id].file_output_yuv_snapshot_ok, "w+b");
+        fclose(fp_output_yuv_snapshot_ok);
+        fp_output_yuv_snapshot_ok = NULL;
+    }
+}
+
+time_t timestamp_record_snapshot[_OUTPUT_CHANNEL_MAX_] = {0, 0, 0, 0};
+FILE *fp_output_record_snapshot[_OUTPUT_CHANNEL_MAX_] = {NULL, NULL, NULL, NULL};
+
+void record_snapshot(uint8_t chn_id, const void *ptr, size_t len) {
+    if (access(mpiEncTestArgs[chn_id].record_snapshot_notification, F_OK) != 0)
+        return;
+
+    time_t stamp = time(NULL);
+    if (timestamp_record_snapshot[chn_id] == 0) {
+        goto RECORD_DONE;
+    } else if (stamp > timestamp_record_snapshot[chn_id] + 1) {
+        FILE *fp = fopen(mpiEncTestArgs[chn_id].file_input_rknn_result, "r");
+        if (fp) {
+            char buffer[256] = ""; // 缓冲区大小
+            while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+            }
+            printf("rknn_result:%d,%s\n", buffer[0] - '0', &buffer[2]);
+            broadcast_warn(buffer[0] - '0', &buffer[2], timestamp_record_snapshot[chn_id]);
+        }
+        unlink(mpiEncTestArgs[chn_id].file_input_rknn_result_ok);
+        unlink(mpiEncTestArgs[chn_id].file_input_rknn_result);
+        unlink(mpiEncTestArgs[chn_id].record_snapshot_notification);
+        timestamp_record_snapshot[chn_id] = 0;
+        printf("%d record_snapshot done %d\n", __LINE__, chn_id);
+        goto RECORD_DONE;
+    }
+
+    const char *dir_name = "/storage/emulated/0/Documents";
+    char file_output[128];
+    sprintf(file_output, "%s/%ld.ts", dir_name, timestamp_record_snapshot[chn_id]);
+    if (access(file_output, F_OK) != 0) {
+        printf("%d record_snapshot create %d\n", __LINE__, chn_id);
+        fp_output_record_snapshot[chn_id] = fopen(file_output, "w+b");
+    }
+
+    if (fp_output_record_snapshot[chn_id]) {
+        fwrite(ptr, 1, len, fp_output_record_snapshot[chn_id]);
+        return;
+    }
+
+    RECORD_DONE:
+    if (fp_output_record_snapshot[chn_id]) {
+        fclose(fp_output_record_snapshot[chn_id]);
+        fp_output_record_snapshot[chn_id] = NULL;
+    }
+}
+
+void record_snapshot_notification_handle(uint8_t chn_id) {
+    //check rknn result
+    while (1) {
+        //printf("%d record_snapshot_notification_handle %d\n", __LINE__, chn_id);
+        if (access(mpiEncTestArgs[chn_id].record_snapshot_notification, F_OK) != 0 &&
+            access(mpiEncTestArgs[chn_id].file_input_rknn_result_ok, F_OK) == 0) {
+            printf("%d record_snapshot_notification %d\n", __LINE__, chn_id);
+            timestamp_record_snapshot[chn_id] = time(NULL);
+            FILE *fp = fopen(mpiEncTestArgs[chn_id].record_snapshot_notification, "w+b");
+            fclose(fp);
+            fp = NULL;
+        } else {
+
+        }
+        sleep(3);
+    }
+}
+
+void record_snapshot_notification_thread(uint8_t chn_id){
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, (void *(*)(void *)) record_snapshot_notification_handle, chn_id);
+}
+void broadcast_warn(uint8_t warn, char *img, time_t video) {
+    char cmd[128];
+    sprintf(cmd, "/system/bin/am broadcast -a com.xstrive.qdcar --es warn %d --es img %s --es video %ld.ts &", warn, img, video);
+    printf("%s", cmd);
+    system(cmd);
 }
