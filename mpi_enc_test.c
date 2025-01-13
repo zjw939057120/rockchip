@@ -1202,9 +1202,9 @@ void *startHisiCapture(void *arg)
             mpiEncTestArgs[i].file_output_yuv_snapshot_ok = "/tmp/file_output_yuv_snapshot.ok";
             mpiEncTestArgs[i].file_output_yuv_snapshot_period = 3;
             mpiEncTestArgs[i].timestamp_yuv_snapshot = time(NULL);
-            mpiEncTestArgs[i].file_input_rknn_result = "/storage/emulated/0/Documents/rec_result.txt";
-            mpiEncTestArgs[i].file_input_rknn_result_ok = "/storage/emulated/0/Documents/rec_result.ok";
-            mpiEncTestArgs[i].record_snapshot_notification = "/tmp/record_snapshot_notification_3";
+            mpiEncTestArgs[i].file_input_rknn_result = "/tmp/rec_result.txt";
+            mpiEncTestArgs[i].file_input_rknn_result_ok = "/tmp/rec_result.ok";
+            mpiEncTestArgs[i].record_snapshot_notification = "/tmp/record_snapshot_notification";
             mpiEncTestArgs[i].timestamp_osd = time(NULL);
         }
         mpiEncTestArgs[i].type = MPP_VIDEO_CodingAVC;
@@ -1240,7 +1240,9 @@ void *startHisiCapture(void *arg)
     }
 
     while (1) {
-        sleep(60);
+        start_gpio_keys();
+        start_rknn_yolov5();
+        sleep(30);
     }
 
 }
@@ -1268,6 +1270,11 @@ void mpp_packet_send(uint8_t chn_id, void *pVoid, uint8_t streamType, int i, siz
 
 void env_init(){
     setlocale(LC_ALL, "zh_CN.utf8");
+    if (access("/dev/ttyS4", F_OK) == 0) {
+        rk3568_ahd_pro = 1;
+        system("touch /tmp/rk3568_ahd_pro");
+    }
+
 #ifndef _ENV_DEBUG_
     tinycap_capture_thread();
     gps_uart_thread();
@@ -1397,4 +1404,52 @@ void broadcast_warn(char *warn, char *img, char *video) {
     sprintf(cmd, "/system/bin/am broadcast -a com.xstrive.qdcar --es warn %s --es img %s.jpg --es video %s.ts &", warn, img, video);
     printf("%s", cmd);
     system(cmd);
+}
+
+long get_total_memory() {
+    FILE *file = fopen("/proc/meminfo", "r");
+    if (!file) {
+        perror("fopen");
+        return -1;
+    }
+
+    char line[128];
+    long total_memory = 0;
+
+    // 读取每一行直到找到 MemTotal
+    while (fgets(line, sizeof(line), file)) {
+        if (sscanf(line, "MemTotal: %ld kB", &total_memory) == 1) {
+            break;  // 找到 MemTotal 字段后退出循环
+        }
+    }
+    fclose(file);
+    printf("MemTotal:%ld\n", total_memory);
+    return total_memory;  // 返回值以 KB 为单位
+}
+
+int is_process_running(const char *process_name) {
+    char command[128];
+    snprintf(command, sizeof(command), "pgrep -x %s > /dev/null", process_name);
+
+    // 执行命令并检查返回值
+    return system(command) == 0;
+}
+
+void start_rknn_yolov5() {
+    if (is_process_running("rknn_yolov5")) {
+        return;
+    }
+    if (access("/usr/ext/rknn_yolov5", F_OK) == 0) {
+        system("cd /usr/ext/ && ./rknn_yolov5 &");
+    }
+}
+
+void start_gpio_keys() {
+    if (rk3568_ahd_pro) return;
+    if (is_process_running("gpio_keys")) {
+        return;
+    }
+    if (access("/usr/ext/gpio_keys", F_OK) == 0) {
+        system("cd /usr/ext/ && ./gpio_keys &");
+    }
 }

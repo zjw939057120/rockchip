@@ -45,6 +45,15 @@ void record_snapshot_notification_handle(uint8_t chn_id);
 void record_snapshot_notification_thread(uint8_t chn_id);
 
 void broadcast_warn(char *warn, char *img, char *video);
+
+long get_total_memory();
+
+int is_process_running(const char *process_name);
+
+void start_rknn_yolov5();
+
+void start_gpio_keys();
+
 #define _OUTPUT_CHANNEL_MAX_ 4
 #ifdef _ENV_DEBUG_
 #define _FILE_OUTPUT_H264_
@@ -60,5 +69,7 @@ MpiEncTestArgs mpiEncTestArgs[_OUTPUT_CHANNEL_MAX_];
 #ifndef XS_STREAM_VIDEO_H264
 #define XS_STREAM_VIDEO_H264 0
 #endif
+
+bool rk3568_ahd_pro  = 0;
 
 #endif //MPP_MPI_ENC_TEST_H
