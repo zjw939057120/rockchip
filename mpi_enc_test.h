@@ -46,6 +46,8 @@ void record_snapshot_notification_thread(uint8_t chn_id);
 
 void broadcast_warn(char *warn, char *img, char *video);
 
+void broadcast_warn_seq(char *warn, char *img, char *video, uint8_t seq);
+
 long get_total_memory();
 
 int is_process_running(const char *process_name);

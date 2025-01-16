@@ -1325,8 +1325,7 @@ void record_snapshot(uint8_t chn_id, const void *ptr, size_t len) {
     time_t stamp = time(NULL);
     if (timestamp_record_snapshot[chn_id] == 0) {
         goto RECORD_DONE;
-    } else if (stamp > timestamp_record_snapshot[chn_id] + 10) {
-        broadcast_warn(rknn_record_type, rknn_record_name, rknn_record_name);
+    } else if (stamp >= timestamp_record_snapshot[chn_id] + 10) {
         unlink(mpiEncTestArgs[chn_id].file_input_rknn_result_ok);
         unlink(mpiEncTestArgs[chn_id].file_input_rknn_result);
         unlink(mpiEncTestArgs[chn_id].record_snapshot_notification);
@@ -1339,6 +1338,7 @@ void record_snapshot(uint8_t chn_id, const void *ptr, size_t len) {
     char file_output[128];
     sprintf(file_output, "%s/%s.ts", dir_name, rknn_record_name);
     if (access(file_output, F_OK) != 0) {
+        broadcast_warn(rknn_record_type, rknn_record_name, rknn_record_name);
         printf("%d record_snapshot create %d\n", __LINE__, chn_id);
         fp_output_record_snapshot[chn_id] = fopen(file_output, "w+b");
     }
@@ -1402,6 +1402,12 @@ void record_snapshot_notification_thread(uint8_t chn_id){
 void broadcast_warn(char *warn, char *img, char *video) {
     char cmd[128];
     sprintf(cmd, "/system/bin/am broadcast -a com.xstrive.qdcar --es warn %s --es img %s.jpg --es video %s.ts &", warn, img, video);
+    printf("%s", cmd);
+    system(cmd);
+}
+void broadcast_warn_seq(char *warn, char *img, char *video, uint8_t seq) {
+    char cmd[128];
+    sprintf(cmd,"/system/bin/am broadcast -a com.xstrive.qdcar --es warn %s --es img %s.jpg --es video %s.ts  --es seq %d &", warn, img, video, seq);
     printf("%s", cmd);
     system(cmd);
 }
