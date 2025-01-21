@@ -30,6 +30,9 @@
 #include "mpp_opt.h"
 #include "mpi_enc_utils.h"
 #include "freetype_test.h"
+#ifndef _ENV_DEBUG_
+#include "From_BD.h"
+#endif
 
 #define MAX_FILE_NAME_LENGTH        256
 
@@ -1180,7 +1183,11 @@ MPP_RET mpi_enc_gen_osd_data(MppEncOSDData *osd_data, MppBufferGroup group,
                     char time_buf[100];
                     struct tm tm = *localtime(&stamp);
                     strftime(time_buf, sizeof(time_buf), "%Y/%m/%d %H:%M:%S", &tm);
-                    sprintf(cmd->osd_text, "（通道%d） %s  114.398765/30.476549  0.00 km/h", cmd->chn_id + 1, time_buf);
+#ifndef _ENV_DEBUG_
+                    sprintf(cmd->osd_text, "(通道%d) %s  %0.6f/%0.6f  %0.2f km/h", cmd->chn_id + 1, time_buf, tGNRMC_Info.longitude, tGNRMC_Info.latitude, tGNRMC_Info.speedSection);
+#else
+                    sprintf(cmd->osd_text, "(通道%d) %s  114.398765/30.476549  0.00 km/h", cmd->chn_id + 1, time_buf);
+#endif
                 }
             }
                 break;
