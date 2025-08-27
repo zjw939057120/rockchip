@@ -7,14 +7,28 @@ set(CMAKE_CXX_STANDARD 14)
 
 include_directories(
         inc
+        inc/base
         inc/mpp
         inc/osal
-        inc/utils)
+        utils)
 
-link_directories(lib)
+link_directories(
+        lib
+        /root/mpp)
 
-add_executable(mpi_enc mpi_enc.cpp)
+add_library(utils STATIC
+        utils/mpp_enc_roi_utils.c
+        utils/mpi_enc_utils.c
+        utils/mpi_dec_utils.c
+        utils/mpp_opt.c
+        utils/utils.c
+        utils/iniparser.c
+        utils/dictionary.c
+        utils/camera_source.c)
+
+add_executable(mpi_enc main.cpp mpi_enc.cpp)
+
 target_link_libraries(
         mpi_enc
-        -lrockchip_mpp
-        -lutils)
+        utils
+        librockchip_mpp.so.1)

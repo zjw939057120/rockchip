@@ -36,6 +36,7 @@
 #include "camera_source.h"
 #include "mpp_enc_roi_utils.h"
 #include "mpp_rc_api.h"
+#include "mpp_enc.h"
 
 static RK_S32 aq_thd_smart[16] = {
     1,  3,  3,  3,  3,  3,  5,  5,
@@ -1196,22 +1197,35 @@ int enc_test_multi(MpiEncTestArgs* cmd, const char *name)
     return ret;
 }
 
-int main(int argc, char **argv)
+void mpi_enc(char *file_input,char *file_output,RK_S32 width,RK_S32 height)
 {
     RK_S32 ret = MPP_NOK;
     MpiEncTestArgs* cmd = mpi_enc_test_cmd_get();
+    cmd->file_input=file_input;
+    cmd->file_output=file_output;
+    cmd->type=MPP_VIDEO_CodingAVC;
+    cmd->type_src=MPP_VIDEO_CodingUnused;
+    cmd->format=MPP_FMT_YUV420SP;
+    cmd->frame_num=1000;
+    cmd->nthreads=1;
+    cmd->width=width;
+    cmd->height=height;
+    cmd->hor_stride=width;
+    cmd->ver_stride=cmd->height;
 
     // parse the cmd option
+/*
     ret = mpi_enc_test_cmd_update_by_args(cmd, argc, argv);
     if (ret)
         goto DONE;
+*/
 
     mpi_enc_test_cmd_show_opt(cmd);
 
-    ret = enc_test_multi(cmd, argv[0]);
+    ret = enc_test_multi(cmd, cmd->file_input);
 
 DONE:
     mpi_enc_test_cmd_put(cmd);
 
-    return ret;
+/*    return ret;*/
 }
