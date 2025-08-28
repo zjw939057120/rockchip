@@ -1,7 +1,6 @@
 #include <iostream>
 #include "mpp_enc.h"
 #include <thread>
-#include <csignal>
 
 int main() {
     //相机线程
@@ -11,6 +10,7 @@ int main() {
     video44.detach();
 
     //相机线程
+/*
     std::thread video53([]() {
         mpi_enc("/dev/video53", "/root/out53.h264", 1280, 720);
     });
@@ -27,9 +27,10 @@ int main() {
         mpi_enc("/dev/video71", "/root/out71.h264", 1280, 720);
     });
     video71.detach();
+*/
 
     while (true) {
-        sleep(60);
+        std::this_thread::sleep_for(std::chrono::seconds(3600));
     }
 
     return 0;

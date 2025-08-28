@@ -10,9 +10,7 @@
 
 void mpi_enc(char *file_input,char *file_output,RK_S32 width,RK_S32 height);
 
-class mpp_enc {
-
-};
+#define FILE_OUTPUT
 
 
 #endif //MPI_ENC_MPP_ENC_H

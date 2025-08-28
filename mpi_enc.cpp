@@ -259,6 +259,7 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
         }
     }
 
+#ifdef FILE_OUTPUT
     if (cmd->file_output) {
         p->fp_output = fopen(cmd->file_output, "w+b");
         if (NULL == p->fp_output) {
@@ -266,6 +267,7 @@ MPP_RET test_ctx_init(MpiEncMultiCtxInfo *info)
             ret = MPP_ERR_OPEN_FILE;
         }
     }
+#endif
 
     if (cmd->file_slt) {
         p->fp_verify = fopen(cmd->file_slt, "wt");
@@ -334,10 +336,12 @@ MPP_RET test_ctx_deinit(MpiEncTestData *p)
             fclose(p->fp_input);
             p->fp_input = NULL;
         }
+#ifdef FILE_OUTPUT
         if (p->fp_output) {
             fclose(p->fp_output);
             p->fp_output = NULL;
         }
+#endif
         if (p->fp_verify) {
             fclose(p->fp_verify);
             p->fp_verify = NULL;
@@ -688,8 +692,10 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
             void *ptr   = mpp_packet_get_pos(packet);
             size_t len  = mpp_packet_get_length(packet);
 
+#ifdef FILE_OUTPUT
             if (p->fp_output)
                 fwrite(ptr, 1, len, p->fp_output);
+#endif
         }
 
         mpp_packet_deinit(&packet);
@@ -897,8 +903,10 @@ MPP_RET test_mpp_run(MpiEncMultiCtxInfo *info)
 
                 p->pkt_eos = mpp_packet_get_eos(packet);
 
+#ifdef FILE_OUTPUT
                 if (p->fp_output)
                     fwrite(ptr, 1, len, p->fp_output);
+#endif
 
                 if (p->fp_verify && !p->pkt_eos) {
                     calc_data_crc((RK_U8 *)ptr, (RK_U32)len, &checkcrc);
@@ -1202,7 +1210,9 @@ void mpi_enc(char *file_input,char *file_output,RK_S32 width,RK_S32 height)
     RK_S32 ret = MPP_NOK;
     MpiEncTestArgs* cmd = mpi_enc_test_cmd_get();
     cmd->file_input=file_input;
+#ifdef FILE_OUTPUT
     cmd->file_output=file_output;
+#endif
     cmd->type=MPP_VIDEO_CodingAVC;
     cmd->type_src=MPP_VIDEO_CodingUnused;
     cmd->format=MPP_FMT_YUV420SP;
