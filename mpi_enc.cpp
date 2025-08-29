@@ -754,6 +754,12 @@ MPP_RET mpi_enc::test_mpp_run(MpiEncMultiCtxInfo *info) {
                 if (p->fp_output)
                     fwrite(ptr, 1, len, p->fp_output);
 #endif
+#ifdef RTSP_OUTPUT
+                if (m_ffmpeg_utils.push_h264_to_rtsp(ptr, len, p->fps_out_num) < 0) {
+                    mpp_err_f("push_h264_to_rtsp failed\n");
+                    goto RET;
+                }
+#endif
 
                 if (p->fp_verify && !p->pkt_eos) {
                     calc_data_crc((RK_U8 *) ptr, (RK_U32) len, &checkcrc);
@@ -926,6 +932,14 @@ void *mpi_enc::enc_test(void *arg) {
         mpp_err_f("test mpp setup failed ret %d\n", ret);
         goto MPP_TEST_OUT;
     }
+#ifdef RTSP_OUTPUT
+    if (m_ffmpeg_utils.push_h264_to_rtsp_init(this->rtsp_output, p->width, p->height, p->fps_out_num,
+                                              p->bps) < 0) {
+        mpp_err_f("push_h264_to_rtsp_init failed\n");
+        goto MPP_TEST_OUT;
+    }
+
+#endif
 
     t_s = mpp_time();
     ret = test_mpp_run(info);
@@ -1039,6 +1053,10 @@ int mpi_enc::enc_test_multi(MpiEncTestArgs *cmd, const char *name) {
 */
     worker_thread.join();
 
+#ifdef RTSP_OUTPUT
+    m_ffmpeg_utils.push_h264_to_rtsp_end();
+#endif
+
     for (i = 0; i < cmd->nthreads; i++) {
         MpiEncMultiCtxRet *enc_ret = &ctxs[i].ret;
 
@@ -1057,7 +1075,13 @@ int mpi_enc::enc_test_multi(MpiEncTestArgs *cmd, const char *name) {
     return ret;
 }
 
-void mpi_enc::start(char *file_input, char *file_output, RK_S32 width, RK_S32 height) {
+void mpi_enc::start(char *file_input, char *file_output, char *rtsp_output, RK_S32 width, RK_S32 height) {
+    this->file_input = file_input;
+    this->file_output = file_output;
+    this->rtsp_output = rtsp_output;
+    this->width = width;
+    this->height = height;
+
     RK_S32 ret = MPP_NOK;
     MpiEncTestArgs *cmd = mpi_enc_test_cmd_get();
     cmd->file_input = file_input;
@@ -1067,11 +1091,11 @@ void mpi_enc::start(char *file_input, char *file_output, RK_S32 width, RK_S32 he
     cmd->type = MPP_VIDEO_CodingAVC;
     cmd->type_src = MPP_VIDEO_CodingUnused;
     cmd->format = MPP_FMT_YUV420SP;
-    cmd->frame_num = 100;
+    cmd->frame_num = 0;
     cmd->nthreads = 1;
-    cmd->width = width;
-    cmd->height = height;
-    cmd->hor_stride = width;
+    cmd->width = this->width;
+    cmd->height = this->height;
+    cmd->hor_stride = cmd->width;
     cmd->ver_stride = cmd->height;
 
     // parse the cmd option

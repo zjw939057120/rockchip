@@ -5,6 +5,8 @@
 #ifndef MPI_ENC_MPP_ENC_H
 #define MPI_ENC_MPP_ENC_H
 
+#include "ffmpeg_utils.h"
+
 extern "C" {
 #if defined(_WIN32)
 #include "vld.h"
@@ -31,7 +33,8 @@ extern "C" {
 #include "mpp_enc.h"
 };
 
-#define FILE_OUTPUT
+//#define FILE_OUTPUT
+#define RTSP_OUTPUT
 
 static RK_S32 aq_thd_smart[16] = {
         1, 3, 3, 3, 3, 3, 5, 5,
@@ -194,8 +197,17 @@ public:
 
     int enc_test_multi(MpiEncTestArgs *cmd, const char *name);
 
-    void start(char *file_input, char *file_output, RK_S32 width, RK_S32 height);
+    void start(char *file_input, char *file_output, char *rtsp_output, RK_S32 width, RK_S32 height);
 
+private:
+    char *file_input;
+    char *file_output;
+    char *rtsp_output;
+    RK_S32 width;
+    RK_S32 height;
+#ifdef RTSP_OUTPUT
+    ffmpeg_utils m_ffmpeg_utils;
+#endif
 };
 
 
