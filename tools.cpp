@@ -9,3 +9,12 @@ bool tools::isProgramRunning(const std::string &programName) {
     int result = system(command.c_str());
     return result == 0; // 如果返回 0，表示程序正在运行
 }
+
+bool tools::fileExists(const std::string &filename) {
+    FILE *file = fopen(filename.c_str(), "r");
+    if (file) {
+        fclose(file);
+        return true;
+    }
+    return false;
+}

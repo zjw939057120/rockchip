@@ -3,9 +3,8 @@
 #include "tools.h"
 #include <thread>
 
-#define DEMO_MODE
+//#define DEMO_MODE
 #define CAM_MAX_MUN 4
-#define MEDIA_SERVER_PATH "/root/release/MediaServer"
 
 struct CONFIG {
     char *file_input;
@@ -16,17 +15,7 @@ struct CONFIG {
 };
 
 int main() {
-    char cmd[PATH_MAX];
-    //启动服务端
-    if (!tools::isProgramRunning(MEDIA_SERVER_PATH)) {
-        sprintf(cmd, "nohup %s -d > /dev/null 2>&1 &", MEDIA_SERVER_PATH);
-        std::system(cmd);
-    }
-
-    //延迟500ms
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     CONFIG config[CAM_MAX_MUN];
-
     uint8_t index = 0;
     config[index].file_input = "/dev/video44";
     config[index].file_output = "/root/video0.h264";
@@ -34,7 +23,7 @@ int main() {
     config[index].width = 1280;
     config[index].height = 720;
     index++;
-    config[index].file_input = "/dev/video54";
+    config[index].file_input = "/dev/video53";
     config[index].file_output = "/root/video1.h264";
     config[index].rtsp_output = "rtsp://127.0.0.1/live/video1";
     config[index].width = 1280;

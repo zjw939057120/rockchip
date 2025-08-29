@@ -12,6 +12,7 @@ class tools {
 public:
     static bool isProgramRunning(const std::string &programName);
 
+    static bool fileExists(const std::string &filename);
 };
 
 

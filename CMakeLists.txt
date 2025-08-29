@@ -2,17 +2,17 @@
 #tail -f /var/log/syslog
 cmake_minimum_required(VERSION 3.18)
 
-if(WIN32)
-# 设置目标系统
-set(CMAKE_SYSTEM_NAME Linux)
-# 设置目标系统的处理器架构
-set(CMAKE_SYSTEM_PROCESSOR arm64)
-# 设置交叉编译工具链的路径
-set(CMAKE_C_COMPILER D:/gcc-linaro-7.5.0-2019.12-i686-mingw32_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc.exe)
-set(CMAKE_CXX_COMPILER D:/gcc-linaro-7.5.0-2019.12-i686-mingw32_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++.exe)
-# 设置查找库和头文件的路径
-set(CMAKE_FIND_ROOT_PATH D:/gcc-linaro-7.5.0-2019.12-i686-mingw32_aarch64-linux-gnu/aarch64-linux-gnu)
-endif()
+if (WIN32)
+    # 设置目标系统
+    set(CMAKE_SYSTEM_NAME Linux)
+    # 设置目标系统的处理器架构
+    set(CMAKE_SYSTEM_PROCESSOR arm64)
+    # 设置交叉编译工具链的路径
+    set(CMAKE_C_COMPILER D:/gcc-linaro-7.5.0-2019.12-i686-mingw32_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc.exe)
+    set(CMAKE_CXX_COMPILER D:/gcc-linaro-7.5.0-2019.12-i686-mingw32_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++.exe)
+    # 设置查找库和头文件的路径
+    set(CMAKE_FIND_ROOT_PATH D:/gcc-linaro-7.5.0-2019.12-i686-mingw32_aarch64-linux-gnu/aarch64-linux-gnu)
+endif ()
 
 project(mpi_enc)
 
@@ -27,7 +27,7 @@ include_directories(
 
 link_directories(
         lib
-        /root/usr/lib)
+        /root/release)
 
 add_library(utils STATIC
         utils/mpp_enc_roi_utils.c
@@ -38,13 +38,16 @@ add_library(utils STATIC
         utils/iniparser.c
         utils/dictionary.c
         utils/camera_source.c)
-
-add_executable(mpi_enc main.cpp mpi_enc.cpp ffmpeg_utils.cpp tools.cpp)
+#客户端
+add_executable(MediaClient main.cpp mpi_enc.cpp ffmpeg_utils.cpp tools.cpp)
 
 target_link_libraries(
-        mpi_enc
+        MediaClient
         utils
         -lrockchip_mpp
         -lpthread
         -lavformat -lavcodec -lavutil -lavdevice -lswresample
         -lfdk-aac -lopus)
+
+#控制端
+add_executable(MediaControl mpp_control.cpp tools.cpp)

@@ -22,7 +22,7 @@ class ffmpeg_utils {
 public:
     int push_h264_to_rtsp_init(const char *rtsp_url, int width, int height, int fps, int bitrate);
 
-    int push_h264_to_rtsp(const void *data, size_t len, int fps);
+    int push_h264_to_rtsp(const void *data, size_t len);
 
     int push_h264_to_rtsp_end();
 
@@ -32,6 +32,11 @@ private:
     AVCodecParameters *codecpar = NULL;
     AVPacket pkt;
     int ret;
+    const char *m_rtsp_url;
+    int m_width;
+    int m_height;
+    int m_fps;
+    int m_bitrate;
 };
 
 

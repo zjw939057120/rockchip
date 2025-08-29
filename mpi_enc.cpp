@@ -755,7 +755,7 @@ MPP_RET mpi_enc::test_mpp_run(MpiEncMultiCtxInfo *info) {
                     fwrite(ptr, 1, len, p->fp_output);
 #endif
 #ifdef RTSP_OUTPUT
-                if (m_ffmpeg_utils.push_h264_to_rtsp(ptr, len, p->fps_out_num) < 0) {
+                if (m_ffmpeg_utils.push_h264_to_rtsp(ptr, len) < 0) {
                     mpp_err_f("push_h264_to_rtsp failed\n");
                     goto RET;
                 }
@@ -933,7 +933,7 @@ void *mpi_enc::enc_test(void *arg) {
         goto MPP_TEST_OUT;
     }
 #ifdef RTSP_OUTPUT
-    if (m_ffmpeg_utils.push_h264_to_rtsp_init(this->rtsp_output, p->width, p->height, p->fps_out_num,
+    if (m_ffmpeg_utils.push_h264_to_rtsp_init(m_rtsp_output, p->width, p->height, p->fps_out_num,
                                               p->bps) < 0) {
         mpp_err_f("push_h264_to_rtsp_init failed\n");
         goto MPP_TEST_OUT;
@@ -1053,10 +1053,6 @@ int mpi_enc::enc_test_multi(MpiEncTestArgs *cmd, const char *name) {
 */
     worker_thread.join();
 
-#ifdef RTSP_OUTPUT
-    m_ffmpeg_utils.push_h264_to_rtsp_end();
-#endif
-
     for (i = 0; i < cmd->nthreads; i++) {
         MpiEncMultiCtxRet *enc_ret = &ctxs[i].ret;
 
@@ -1076,25 +1072,25 @@ int mpi_enc::enc_test_multi(MpiEncTestArgs *cmd, const char *name) {
 }
 
 void mpi_enc::start(char *file_input, char *file_output, char *rtsp_output, RK_S32 width, RK_S32 height) {
-    this->file_input = file_input;
-    this->file_output = file_output;
-    this->rtsp_output = rtsp_output;
-    this->width = width;
-    this->height = height;
+    m_file_input = file_input;
+    m_file_output = file_output;
+    m_rtsp_output = rtsp_output;
+    m_width = width;
+    m_height = height;
 
     RK_S32 ret = MPP_NOK;
     MpiEncTestArgs *cmd = mpi_enc_test_cmd_get();
-    cmd->file_input = file_input;
+    cmd->file_input = m_file_input;
 #ifdef FILE_OUTPUT
-    cmd->file_output = file_output;
+    cmd->file_output = m_file_output;
 #endif
     cmd->type = MPP_VIDEO_CodingAVC;
     cmd->type_src = MPP_VIDEO_CodingUnused;
     cmd->format = MPP_FMT_YUV420SP;
     cmd->frame_num = 0;
     cmd->nthreads = 1;
-    cmd->width = this->width;
-    cmd->height = this->height;
+    cmd->width = m_width;
+    cmd->height = m_height;
     cmd->hor_stride = cmd->width;
     cmd->ver_stride = cmd->height;
 

@@ -200,11 +200,11 @@ public:
     void start(char *file_input, char *file_output, char *rtsp_output, RK_S32 width, RK_S32 height);
 
 private:
-    char *file_input;
-    char *file_output;
-    char *rtsp_output;
-    RK_S32 width;
-    RK_S32 height;
+    char *m_file_input;
+    char *m_file_output;
+    char *m_rtsp_output;
+    RK_S32 m_width;
+    RK_S32 m_height;
 #ifdef RTSP_OUTPUT
     ffmpeg_utils m_ffmpeg_utils;
 #endif
