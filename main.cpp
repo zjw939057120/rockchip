@@ -3,7 +3,17 @@
 #include "tools.h"
 #include <thread>
 
+#define DEMO_MODE
+#define CAM_MAX_MUN 4
 #define MEDIA_SERVER_PATH "/root/release/MediaServer"
+
+struct CONFIG {
+    char *file_input;
+    char *file_output;
+    char *rtsp_output;
+    RK_S32 width;
+    RK_S32 height;
+};
 
 int main() {
     char cmd[PATH_MAX];
@@ -15,33 +25,48 @@ int main() {
 
     //延迟500ms
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    //相机1线程
-    std::thread video1([]() {
-        mpi_enc m_mpi_enc;
-        m_mpi_enc.start("/dev/video10", "/root/video1.h264", "rtsp://127.0.0.1/live/video1", 1280, 720);
-    });
-    video1.detach();
+    CONFIG config[CAM_MAX_MUN];
 
-    //相机2线程
-    std::thread video2([]() {
-        class mpi_enc m_mpi_enc;
-        m_mpi_enc.start("/dev/video12", "/root/video2.h264", "rtsp://127.0.0.1/live/video2", 1280, 720);
-    });
-    video2.detach();
+    uint8_t index = 0;
+    config[index].file_input = "/dev/video44";
+    config[index].file_output = "/root/video0.h264";
+    config[index].rtsp_output = "rtsp://127.0.0.1/live/video0";
+    config[index].width = 1280;
+    config[index].height = 720;
+    index++;
+    config[index].file_input = "/dev/video54";
+    config[index].file_output = "/root/video1.h264";
+    config[index].rtsp_output = "rtsp://127.0.0.1/live/video1";
+    config[index].width = 1280;
+    config[index].height = 720;
+    index++;
+    config[index].file_input = "/dev/video62";
+    config[index].file_output = "/root/video2.h264";
+    config[index].rtsp_output = "rtsp://127.0.0.1/live/video2";
+    config[index].width = 1280;
+    config[index].height = 720;
+    index++;
+    config[index].file_input = "/dev/video71";
+    config[index].file_output = "/root/video3.h264";
+    config[index].rtsp_output = "rtsp://127.0.0.1/live/video3";
+    config[index].width = 1280;
+    config[index].height = 720;
 
-    //相机3线程
-    std::thread video3([]() {
-        class mpi_enc m_mpi_enc;
-        m_mpi_enc.start("/dev/video62", "/root/video3.h264", "rtsp://127.0.0.1/live/video3", 1280, 720);
-    });
-    video3.detach();
+#ifdef DEMO_MODE
+    config[0].file_input = "/dev/video10";
+    config[1].file_input = "/dev/video12";
+#endif
 
-    //相机4线程
-    std::thread video4([]() {
-        class mpi_enc m_mpi_enc;
-        m_mpi_enc.start("/dev/video71", "/root/video4.h264", "rtsp://127.0.0.1/live/video4", 1280, 720);
-    });
-    video4.detach();
+
+    //相机线程
+    for (int i = 0; i < CAM_MAX_MUN; ++i) {
+        std::thread t([&config, i]() {
+            mpi_enc m_mpi_enc;
+            m_mpi_enc.start(config[i].file_input, config[i].file_output, config[i].rtsp_output, config[i].width,
+                            config[i].height);
+        });
+        t.detach();
+    }
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(3600));
