@@ -25,6 +25,9 @@ include_directories(
         inc/osal
         utils)
 
+include_directories(
+        inc/hv)
+
 link_directories(
         lib
         /root/release)
@@ -40,7 +43,6 @@ add_library(utils STATIC
         utils/camera_source.c)
 #客户端
 add_executable(MediaClient main.cpp mpi_enc.cpp ffmpeg_utils.cpp tools.cpp)
-
 target_link_libraries(
         MediaClient
         utils
@@ -50,4 +52,7 @@ target_link_libraries(
         -lfdk-aac -lopus)
 
 #控制端
-add_executable(MediaControl mpp_control.cpp tools.cpp)
+add_executable(MediaControl http_server.cpp)
+target_link_libraries(
+        MediaControl
+        -lhv_static)
