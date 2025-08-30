@@ -52,7 +52,7 @@ target_link_libraries(
         -lfdk-aac -lopus)
 
 #控制端
-add_executable(MediaControl http_server.cpp)
+add_executable(MediaControl http_server.cpp mpp_control.cpp tools.cpp)
 target_link_libraries(
         MediaControl
         -lhv_static)
