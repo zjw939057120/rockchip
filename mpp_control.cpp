@@ -9,7 +9,12 @@
 
 
 void mpp_control::init() {
-    restartProc(MEDIA_SERVER_PATH);
+    std::thread t([]() {
+        //延迟10秒启动服务端
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        restartProc(MEDIA_SERVER_PATH);
+    });
+    t.detach();
 }
 
 void mpp_control::startProc(const char *progress) {

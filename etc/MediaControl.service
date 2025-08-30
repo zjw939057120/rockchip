@@ -1,0 +1,10 @@
+[Unit]
+Description = MediaControl
+
+[Service]
+ExecStart = /root/release/MediaControl
+Restart = always
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
