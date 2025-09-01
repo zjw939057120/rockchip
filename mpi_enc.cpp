@@ -1071,12 +1071,13 @@ int mpi_enc::enc_test_multi(MpiEncTestArgs *cmd, const char *name) {
     return ret;
 }
 
-void mpi_enc::start(char *file_input, char *file_output, char *rtsp_output, RK_S32 width, RK_S32 height) {
-    m_file_input = file_input;
-    m_file_output = file_output;
-    m_rtsp_output = rtsp_output;
-    m_width = width;
-    m_height = height;
+void mpi_enc::start(EncConfig *config) {
+    m_file_input = config->file_input;
+    m_file_output = config->file_output;
+    m_rtsp_output = config->rtsp_output;
+    m_width = config->width;
+    m_height = config->height;
+    bps_target = config->bps_target;
 
     RK_S32 ret = MPP_NOK;
     MpiEncTestArgs *cmd = mpi_enc_test_cmd_get();
@@ -1093,6 +1094,7 @@ void mpi_enc::start(char *file_input, char *file_output, char *rtsp_output, RK_S
     cmd->height = m_height;
     cmd->hor_stride = cmd->width;
     cmd->ver_stride = cmd->height;
+    cmd->bps_target = bps_target;
 
     // parse the cmd option
 /*

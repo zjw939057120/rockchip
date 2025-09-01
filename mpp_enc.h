@@ -181,6 +181,15 @@ static RK_S32 aq_step_p_ipc[16] = {
         6, 8, 9, 10,
 };
 
+typedef struct {
+    char *file_input;
+    char *file_output;
+    char *rtsp_output;
+    RK_S32 width;
+    RK_S32 height;
+    RK_S32 bps_target;
+} EncConfig;
+
 class mpi_enc {
 public:
     RK_S32 get_mdinfo_size(MpiEncTestData *p, MppCodingType type);
@@ -197,7 +206,7 @@ public:
 
     int enc_test_multi(MpiEncTestArgs *cmd, const char *name);
 
-    void start(char *file_input, char *file_output, char *rtsp_output, RK_S32 width, RK_S32 height);
+    void start(EncConfig *config);
 
 private:
     char *m_file_input;
@@ -205,6 +214,7 @@ private:
     char *m_rtsp_output;
     RK_S32 m_width;
     RK_S32 m_height;
+    RK_S32 bps_target;
 #ifdef RTSP_OUTPUT
     ffmpeg_utils m_ffmpeg_utils;
 #endif
